@@ -1,0 +1,22 @@
+{
+  "name": "test-heroku-node",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/feugy/test-heroku-node.git"
+  },
+  "author": "feugy <damien.feugas@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/feugy/test-heroku-node/issues"
+  },
+  "homepage": "https://github.com/feugy/test-heroku-node#readme",
+  "devDependencies": {
+    "hapi": "16.6.2"
+  }
+}
