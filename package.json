@@ -1,22 +1,51 @@
 {
-  "name": "test-heroku-node",
+  "name": "palmares-server",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Online server for Palmarès web application",
+  "main": "lib/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "lint": "eslint .",
+    "nsp": "nsp check",
+    "test": "lab",
+    "start": "node lib/server"
   },
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/feugy/test-heroku-node.git"
+    "url": "git+ssh://git@github.com/feugy/palmares.git"
   },
-  "author": "feugy <damien.feugas@gmail.com>",
+  "author": "Feugy <damien.feugas@gmail.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/feugy/test-heroku-node/issues"
+    "url": "https://github.com/feugy/palmares/issues"
   },
-  "homepage": "https://github.com/feugy/test-heroku-node#readme",
+  "homepage": "https://github.com/feugy/palmares#readme",
+  "dependencies": {
+    "boom": "~6.0.0",
+    "cheerio": "~1.0.0-rc.2",
+    "csv-parser": "1.11.0",
+    "hapi": "~16.6.2",
+    "joi": "~13.0.1",
+    "lodash": "~4.17.4",
+    "md5": "~2.2.1",
+    "moment": "~2.19.1",
+    "mongodb": "~2.2.33",
+    "request": "~2.83.0",
+    "request-promise-native": "~1.0.5",
+    "sprintf-js": "1.1.1",
+    "underscore.string.fp": "~1.0.4"
+  },
   "devDependencies": {
-    "hapi": "16.6.2"
+    "eslint": "~4.9.0",
+    "eslint-config-standard": "~10.2.1",
+    "eslint-plugin-import": "~2.8.0",
+    "eslint-plugin-lodash-fp": "2.1.3",
+    "eslint-plugin-node": "~5.2.0",
+    "eslint-plugin-promise": "~3.6.0",
+    "eslint-plugin-standard": "~3.0.1",
+    "iconv-lite": "0.4.19",
+    "lab": "~14.3.1",
+    "lab-espower-transformer": "~1.1.0",
+    "nsp": "~2.8.1",
+    "power-assert": "~1.4.4"
   }
 }
