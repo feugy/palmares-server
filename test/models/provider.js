@@ -1,41 +1,43 @@
-const Lab = require('lab')
-const assert = require('power-assert')
+const test = require('ava').default
 const moment = require('moment')
 const Competition = require('../../lib/models/competition')
-const lab = exports.lab = Lab.script()
-const {describe, it} = lab
 
-describe('Competition class', () => {
-  it('should not build instance without ids', done => {
-    assert.throws(() => new Competition(), /no id provided/)
-    assert.throws(() => new Competition({}), /no id provided/)
-    done()
-  })
+test('should not build instance without options', t =>
+  t.throws(() => new Competition(), /no id provided/)
+)
 
-  it('should take competition with and without data urls', done => {
-    let competition = new Competition({id: '', url: 'url1', dataUrls: 'url2'})
-    assert(competition.url === 'url1')
-    assert.deepStrictEqual(competition.dataUrls, ['url1'])
+test('should not build instance without ids', t =>
+  t.throws(() => new Competition({}), /no id provided/)
+)
 
-    competition = new Competition({id: '', url: 'url1'})
-    assert(competition.url === 'url1')
-    assert.deepStrictEqual(competition.dataUrls, ['url1'])
+test('should url take precedence over string dataUrls', t => {
+  const competition = new Competition({id: '', url: 'url1', dataUrls: 'url2'})
+  t.true(competition.url === 'url1')
+  t.deepEqual(competition.dataUrls, ['url1'])
+})
 
-    competition = new Competition({id: '', url: 'url1', dataUrls: ['url2']})
-    assert(competition.url === 'url1')
-    assert.deepStrictEqual(competition.dataUrls, ['url2'])
-    done()
-  })
+test('should url take precedence over empty dataUrls', t => {
+  const competition = new Competition({id: '', url: 'url1'})
+  t.true(competition.url === 'url1')
+  t.deepEqual(competition.dataUrls, ['url1'])
+})
 
-  it('should serialize competitions', done => {
-    const raw = {id: 'id', url: 'url1', date: '2017-02-17'}
-    const competition = new Competition(raw)
-    assert(competition.date instanceof moment)
-    assert.deepStrictEqual(competition.toJSON(), Object.assign({}, raw, {
+test('should url not take precedence over array dataUrls', t => {
+  const competition = new Competition({id: '', url: 'url1', dataUrls: ['url2']})
+  t.true(competition.url === 'url1')
+  t.deepEqual(competition.dataUrls, ['url2'])
+})
+
+test('should serialize competitions', t => {
+  const raw = {id: 'id', url: 'url1', date: '2017-02-17'}
+  const competition = new Competition(raw)
+  t.true(competition.date instanceof moment)
+  t.deepEqual(
+    competition.toJSON(),
+    Object.assign({}, raw, {
       dataUrls: [raw.url],
       contests: [],
       date: moment.utc(raw.date).toDate()
-    }))
-    done()
-  })
+    })
+  )
 })
