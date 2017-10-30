@@ -2,14 +2,17 @@
   "name": "palmares-server",
   "version": "1.0.0",
   "description": "Online server for Palmarès web application",
-  "main": "lib/index.js",
+  "main": "lib/server.js",
+  "engines": {
+    "node": ">=8.4.x"
+  },
   "scripts": {
     "lint": "eslint . --fix --ignore-path .gitignore",
     "nsp": "nsp check",
     "test": "eslint . --ignore-path .gitignore && nyc ava --verbose",
     "test:coveralls": "nyc report --reporter=text-lcov | coveralls -v",
     "test:watch": "ava --verbose --watch",
-    "start": "node lib/server"
+    "start": "node bin/start"
   },
   "repository": {
     "type": "git",
@@ -53,8 +56,9 @@
     "nyc": "~11.2.1"
   },
   "nyc": {
+    "include": ["lib/**/*"],
     "all": true,
-    "check-coverage": false,
+    "check-coverage": true,
     "lines": 95,
     "reporter": [
       "text",
