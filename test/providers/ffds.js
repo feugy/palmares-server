@@ -1,26 +1,10 @@
 const test = require('ava').default
-const {Server} = require('hapi')
-const {notFound} = require('boom')
-const {promisify} = require('util')
-const {resolve} = require('path')
 const moment = require('moment')
-const readFile = promisify(require('fs').readFile)
-const iconv = require('iconv-lite')
 const FFDSProvider = require('../../lib/providers/ffds')
 const Competition = require('../../lib/models/competition')
+const {startFFDSServer, getFFDSProvider} = require('../_test-utils')
 
 const port = 9124
-const charset = 'iso-8859-1'
-const service = new FFDSProvider({
-  name: 'FFDS',
-  url: `http://127.0.0.1:${port}`,
-  list: 'compet-resultats.php',
-  details: 'compet-resultats.php?NumManif=%1$s',
-  clubs: 'compet-situation.php',
-  couples: 'compet-situation.php?club_id=%1s&Recherche_Club=',
-  search: 'compet-situation.php?couple_name=%1$s&Recherche_Nom=',
-  dateFormat: 'DD/MM/YYYY'
-})
 const club = 'Aix-en-Provence/AUC- DS'
 const expectedCouples = [
   'Patrick Duong - Chau Bui Thi Huyen',
@@ -41,99 +25,11 @@ const expectedClubs = [
   'Villeurbanne/TDC',
   'Villeurbanne/TS'
 ]
+const service = getFFDSProvider(port)
 let server = null
 
-test.before('given a running server', async t => {
-  // creates a fake server
-  server = new Server() // {debug: {request: ['error']}})
-  server.connection({port})
-
-  server.route({
-    method: 'GET',
-    path: '/compet-situation.php',
-    handler: ({query: {club_id: club, couple_name: couple}}, reply) => {
-      const file = club === '1118'
-        ? 'ffds-aix-en-provence-auc-ds.html'
-        : club === '391'
-          ? 'ffds-abbeville.html'
-          : couple && couple.toLowerCase() === 'simon'
-            ? 'ffds-search.html'
-            : couple && couple.toLowerCase() === 'toto'
-              ? 'ffds-search-empty.html'
-              : 'ffds-clubs.html'
-
-      reply(
-        readFile(resolve('test', 'fixtures', file))
-          .then(content => iconv.encode(content, charset))
-          .catch(err => notFound(err))
-      ).charset(charset)
-    }
-  })
-
-  server.route({
-    method: 'GET',
-    path: '/compet-resultats.php',
-    handler: ({query: {NumManif, Compet, Archives}}, reply) => {
-      if (Archives === undefined && NumManif === undefined) {
-        return reply(notFound())
-      }
-      const file = NumManif === '1313'
-        ? Compet === 'Champ-R-A-EDCBA-L'
-          ? '1313-Ad-Lat.html'
-          : Compet === 'Champ-R-C-EDC-L'
-            ? '1313-J2-Lat.html'
-            : Compet === 'Champ-R-J-EDCB-L'
-              ? '1313-Yo-Lat.html'
-              : Compet === 'Champ-R-P-ED-L'
-                ? '1313-J1-Lat.html'
-                : Compet === 'Champ-R-VW-EDCBA-L'
-                  ? '1313-Se-Lat.html'
-                  : '1313-details.html'
-        : NumManif === '1248'
-          ? Compet === 'Comp-N-B-E-L'
-            ? '1248-E2-E-Lat.html'
-            : Compet === 'Comp-N-C-E-L'
-              ? '1248-J2-E-Lat.html'
-              : Compet === 'Comp-N-C-D-L'
-                ? '1248-J2-D-Lat.html'
-                : Compet === 'Comp-N-C-E-S'
-                  ? '1248-J2-E-Std.html'
-                  : Compet === 'Comp-N-C-D-S'
-                    ? '1248-J2-D-Std.html'
-                    : Compet === 'Coms-N-PBMC-F-L'
-                      ? '1248-J-F-Lat.html'
-                      : Compet === 'Coms-N-PBMC-F-S'
-                        ? '1248-J-F-Std.html'
-                        : Compet === 'Open-N-PBMC-CDE-L'
-                          ? '1248-J-O-Lat.html'
-                          : Compet === 'Open-N-PBMC-CDE-S'
-                            ? '1248-J-O-Std.html'
-                            : '1248-details.html'
-          : NumManif === '1423'
-            ? Compet
-              ? '1423-A-C-Lat.html'
-              : '1423-details.html'
-            : NumManif === '1424'
-              ? Compet
-                ? '1424-A-O-Lat.html'
-                : '1424-details.html'
-              : NumManif === '1425'
-                ? Compet
-                  ? '1425-A-O-Lat.html'
-                  : '1425-details.html'
-                : NumManif === '1426'
-                  ? '1426-details.html'
-                  : 'ffds-result.html'
-
-      reply(
-        readFile(resolve('test', 'fixtures', file))
-          .then(content => iconv.encode(content, charset))
-          .catch(err => notFound(err))
-      ).charset(charset)
-    }
-  })
-
-  await server.start()
+test.before('given a running server', async () => {
+  server = await startFFDSServer(port)
 })
 
 test.after.always('stop server', async () => server.stop())

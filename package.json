@@ -6,7 +6,7 @@
   "scripts": {
     "lint": "eslint . --fix --ignore-path .gitignore",
     "nsp": "nsp check",
-    "test": "nyc ava --verbose && eslint . --ignore-path .gitignore",
+    "test": "eslint . --ignore-path .gitignore && nyc ava --verbose",
     "test:coveralls": "nyc report --reporter=text-lcov | coveralls -v",
     "test:watch": "ava --verbose --watch",
     "start": "node lib/server"

@@ -1,20 +1,10 @@
 const test = require('ava').default
-const {Server} = require('hapi')
-const {notFound} = require('boom')
-const {promisify} = require('util')
-const {resolve} = require('path')
 const moment = require('moment')
-const readFile = promisify(require('fs').readFile)
-const WDSFProvider = require('../../lib/providers/wdsf')
 const Competition = require('../../lib/models/competition')
+const {startWDSFServer, getWDSFProvider} = require('../_test-utils')
 
 const port = 9123
-const service = new WDSFProvider({
-  name: 'WDSF',
-  url: `http://127.0.0.1:${port}`,
-  list: 'Calendar/Competition/Results?format=csv&downloadFromDate=01/01/%1$s&downloadToDate=31/12/%1$s&kindFilter=Competition',
-  dateFormat: 'YYYY/MM/DD'
-})
+const service = getWDSFProvider(port)
 let server = null
 // store query and path parameters (in order of appearance)
 const queryParams = []
@@ -25,102 +15,8 @@ test.beforeEach(() => {
   pathParams.splice(0, pathParams.length)
 })
 
-test.before('given a running server', async t => {
-  // creates a fake server
-  server = new Server() // {debug: {request: ['error']}})
-  server.connection({port})
-
-  server.route({
-    method: 'GET',
-    path: '/Calendar/Competition/Results',
-    handler: ({query}, reply) => {
-      queryParams.push(JSON.parse(JSON.stringify(query)))
-      if (!query.downloadFromDate.includes('2012')) {
-        return reply(notFound('no competition for this year'))
-      }
-      reply(readFile(resolve('test', 'fixtures', 'wdsf-result.csv')))
-    }
-  })
-
-  server.route({
-    method: 'GET',
-    path: '/Event/Competition/{competition}',
-    handler: ({query, params: {competition}}, reply) => {
-      queryParams.push(JSON.parse(JSON.stringify(query)))
-      pathParams.push({competition})
-      reply(
-        readFile(resolve('test', 'fixtures',
-          competition.includes('18979')
-            ? '18979-details.html'
-            : competition.includes('19149')
-              ? '19149-details.html'
-              : competition.includes('21478')
-                ? '21478-details.html'
-                : competition
-        )).catch(err => notFound(err))
-      )
-    }
-  })
-
-  server.route({
-    method: 'GET',
-    path: '/Event/Competition/{competition}/{contest}/Ranking',
-    handler: ({query, params: {competition, contest}}, reply) => {
-      queryParams.push(JSON.parse(JSON.stringify(query)))
-      pathParams.push({competition, contest})
-      const file = competition.includes('18979')
-        ? contest.includes('43974')
-          ? '18979-Yo-Std.html'
-          : contest.includes('44643')
-            ? '18979-J2-Std.html'
-            : contest.includes('43976')
-              ? '18979-S1-Std.html'
-              : contest.includes('43978')
-                ? '18979-S2-Std.html'
-                : contest.includes('44642')
-                  ? '18979-S3-Std.html'
-                  : contest.includes('43973')
-                    ? '18979-Yo-Lat.html'
-                    : contest.includes('44644')
-                      ? '18979-J2-Lat.html'
-                      : contest.includes('43975')
-                        ? '18979-S1-Lat.html'
-                        : contest.includes('43977')
-                          ? '18979-S2-Lat.html'
-                          : `${competition}/${contest}`
-        : competition.includes('18507')
-          ? contest.includes('42617')
-            ? '5255-Ch-Std.html'
-            : `${competition}/${contest}`
-          : competition.includes('19282')
-            ? contest.includes('44881')
-              ? '5255-Ad-Lat.html'
-              : contest.includes('44882')
-                ? '5255-Ad-Std.html'
-                : `${competition}/${contest}`
-            : competition.includes('19283')
-              ? contest.includes('44883')
-                ? '5255-Yo-Lat.html'
-                : contest.includes('44884')
-                  ? '5255-Yo-Std.html'
-                  : `${competition}/${contest}`
-              : competition.includes('19149')
-                ? contest.includes('44511')
-                  ? '19149-Ad-Lat.html'
-                  : `${competition}/${contest}`
-                : competition.includes('21478')
-                  ? contest.includes('51883')
-                    ? '21478-J2-Std.html'
-                    : `${competition}/${contest}`
-                  : `${competition}/${contest}`
-      reply(
-        readFile(resolve('test', 'fixtures', file))
-          .catch(err => notFound(err))
-      )
-    }
-  })
-
-  await server.start()
+test.before('given a running server', async () => {
+  server = await startWDSFServer(port, queryParams, pathParams)
 })
 
 test.after.always('stop server', async () => server.stop())
@@ -138,22 +34,21 @@ test('should retrieve competition list', async t => {
   // competition with different names on same days and place have been merged
   t.true(results[0].place === 'San Lazzaro Di Savena')
   t.true(results[0].id === 'b38521030e81c5ddcc7cdeebbe4fe14f')
-  t.true(results[0].date.isSame('2013-01-04'))
+  t.true(results[0].date.isSame(moment.utc('2013-01-04')))
 
   // competition on several days have been merged
   t.true(results[2].place === 'Moscow')
   t.true(results[2].id === '7d00c5480c303ae032043495a6cc7d26')
-  t.true(results[2].date.isSame('2013-01-05'))
+  t.true(results[2].date.isSame(moment.utc('2013-01-05')))
 
   // Kiev World Open, Kiev World Standard and Kiev Open have been merged into one competition
   t.true(results[76].place === 'Kiev')
   t.true(results[76].id === '4aee29e66d0644c811b8babaf30e3be8')
-  t.true(results[76].date.isSame('2013-11-24'))
+  t.true(results[76].date.isSame(moment.utc('2013-11-24')))
 })
 
 test('should handle error when fetching competition list', async t => {
-  const year = new Date().getFullYear()
-  const err = await t.throws(service.listResults(year), Error)
+  const err = await t.throws(service.listResults(2000), Error)
   t.true(err.message.includes('failed to fetch results from WDSF'))
   t.true(err.output.statusCode === 404)
 })
@@ -162,8 +57,8 @@ test('should fetch simple competition contest list', async t => {
   const competition = await service.getDetails(new Competition({
     id: '7a217757907283d497436854677adabd',
     place: 'San Lazzaro Di Savena (bologna)',
-    date: moment('2013-01-04'),
-    url: `http://127.0.0.1:${port}/Event/Competition/Open-San_Lazzaro_di_Savena_(Bologna)-18979`
+    date: moment.utc('2013-01-04'),
+    url: `http://127.0.0.1:${port}/Event/Competition/Open-San_Lazzaro_di_Savena_(Bologna)-18979/`
   }))
   t.true(competition.contests.length === 2)
   const contest = competition.contests
@@ -201,7 +96,7 @@ test('should handle cancelled contests', async t => {
     id: '',
     place: 'GrandSlam Moscow',
     date: moment('2016-10-28'),
-    url: `http://127.0.0.1:${port}/Event/Competition/GrandSlam-Moscow-19149`
+    url: `http://127.0.0.1:${port}/Event/Competition/GrandSlam-Moscow-19149/`
   }))
   t.true(competition.contests.length === 0)
 })
@@ -211,7 +106,7 @@ test('should handle in progress contests', async t => {
     id: '',
     place: 'Open Moscow',
     date: moment('2017-10-29'),
-    url: `http://127.0.0.1:${port}/Event/Competition/Open-Moscow-21478`
+    url: `http://127.0.0.1:${port}/Event/Competition/Open-Moscow-21478/`
   }))
   t.true(competition.contests.length === 0)
 })
