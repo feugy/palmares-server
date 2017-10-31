@@ -17,6 +17,9 @@ test(testOpts, {port: 0, storage: {name: 'bla'}}, '"name" must be one of')
 test(testOpts, {port: 0, storage: {name: 'Mongo'}, providers: 10}, '"providers" must be an array')
 test(testOpts, {port: 0, storage: {name: 'Mongo'}, providers: ['bla']}, '"0" must be an object')
 test(testOpts, {port: 0, storage: {name: 'Mongo'}, providers: [{name: 'bla'}]}, '"name" must be one of')
+test(testOpts, {port: 0, storage: {name: 'Mongo'}, providers: []}, '"auth" is required')
+test(testOpts, {port: 0, storage: {name: 'Mongo'}, providers: [], auth: {}}, '"key" is required')
+test(testOpts, {port: 0, storage: {name: 'Mongo'}, providers: [], auth: {key: 10}}, '"key" must be a string')
 
 test('should be started with all options', async t => {
   const port = 9873
@@ -40,13 +43,13 @@ test('should be started with all options', async t => {
       url: 'unknown',
       list: 'Calendar/Competition/Results?format=csv&downloadFromDate=01/01/%1$s&downloadToDate=31/12/%1$s&kindFilter=Competition',
       dateFormat: 'YYYY/MM/DD'
-    }]
+    }],
+    auth: {
+      key: process.env.JWT_KEY
+    }
   })
 
-  const result = await request({url: `http://localhost:${port}/api/competition`, json: true})
+  await request({url: `http://localhost:${port}/api/competition`, json: true})
   await server.stop()
-
-  t.is(result.offset, 0)
-  t.is(result.size, 0)
-  t.deepEqual(result.values, [])
+  t.pass()
 })

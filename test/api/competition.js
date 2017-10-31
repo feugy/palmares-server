@@ -3,11 +3,24 @@ const {Server} = require('hapi')
 const moment = require('moment')
 const request = require('request-promise-native')
 const Competition = require('../../lib/models/competition')
-const {getMongoStorage} = require('../_test-utils')
+const Palmares = require('../../lib/palmares')
+const {
+  getFFDSProvider,
+  getLogger,
+  getMongoStorage,
+  getWDSFProvider,
+  startFFDSServer,
+  startWDSFServer
+} = require('../_test-utils')
 
 let server
 const port = 9874
+let ffdsServer
+const ffdsPort = 9872
+let wdsfServer
+const wdsfPort = 9871
 const storage = getMongoStorage()
+const palmares = new Palmares(storage, [getFFDSProvider(ffdsPort), getWDSFProvider(wdsfPort)], getLogger())
 
 const serialize = (competition, includeContests = true) => {
   const json = competition.toJSON()
@@ -17,6 +30,9 @@ const serialize = (competition, includeContests = true) => {
   }
   return json
 }
+
+// valid JWT
+const authorization = 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.J7BKXN08GD4Vh6LqSvnB2LjK91Rcln46mwOkktIB2T8'
 
 const competitions = [
   new Competition({
@@ -69,17 +85,30 @@ const competitions = [
 ]
 
 test.before(async () => {
-  server = new Server()
+  // mock servers
+  ffdsServer = await startFFDSServer(ffdsPort)
+  wdsfServer = await startWDSFServer(wdsfPort)
+
+  // save competitions into storage
+  await Promise.all(competitions.map(c => storage.save(c)))
+
+  // server for api testing
+  server = new Server()// {debug: {request: ['error']}})
   server.connection({port})
   server.decorate('request', 'storage', storage)
-  await Promise.all(competitions.map(c => storage.save(c)))
-  await server.register(require('../../lib/api/competition'))
+  server.decorate('request', 'palmares', palmares)
+  await server.register([{
+    register: require('../../lib/utils/authentication'),
+    options: { key: process.env.JWT_KEY }
+  }, require('../../lib/api/competition')])
   await server.start()
 })
 
 test.after.always(async () => {
   await storage.removeAll(Competition)
   await server.stop()
+  await ffdsServer.stop()
+  await wdsfServer.stop()
 })
 
 const testQuery = async (t, input, expected) => {
@@ -128,4 +157,70 @@ test('should return 404 on unknown competition', async t => {
   const {error} = await t.throws(request({url: `http://localhost:${port}/api/competition/whatever`, json: true}))
   t.is(error.statusCode, 404)
   t.true(error.message.includes('no competition with id'))
+})
+
+test('should not update without JWT', async t => {
+  const {error} = await t.throws(request({
+    method: 'PUT',
+    url: `http://localhost:${port}/api/competition/update`,
+    json: true
+  }))
+  t.is(error.statusCode, 401)
+  t.true(error.message.includes('Missing authentication'))
+})
+
+test('should not update with invalid JWT', async t => {
+  const {error} = await t.throws(request({
+    method: 'PUT',
+    headers: {
+      authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.LwimMJA3puF3ioGeS-tfczR3370GXBZMIL-bdpu4hOU'
+    },
+    url: `http://localhost:${port}/api/competition/update`,
+    json: true
+  }))
+  t.is(error.statusCode, 401)
+  t.true(error.message.includes('Invalid token'))
+})
+
+test('should update competition list of a given year, then report update errors', async t => {
+  const result = await request({
+    method: 'PUT',
+    headers: { authorization },
+    url: `http://localhost:${port}/api/competition/update?year=2012`,
+    json: true
+  })
+  t.deepEqual(result, {
+    year: 2012,
+    FFDS: [{
+      place: 'Marseille',
+      date: '2013-03-22T23:00:00.000Z',
+      id: '21f4eb195bc7de2678b1fb8665d79a28'
+    }],
+    WDSF: [{
+      place: 'San Lazzaro Di Savena',
+      date: '2013-01-04T00:00:00.000Z',
+      id: 'b38521030e81c5ddcc7cdeebbe4fe14f'
+    }, {
+      place: 'San Lazzaro Di Savena',
+      date: '2013-01-05T00:00:00.000Z',
+      id: 'a99655379239a76d8c93e4b94311fd19'
+    }, {
+      place: 'Kiev',
+      date: '2013-11-23T00:00:00.000Z',
+      id: 'b491e2d9ffcef71468ac9b676696d220'
+    }, {
+      place: 'Kiev',
+      date: '2013-11-24T00:00:00.000Z',
+      id: '4aee29e66d0644c811b8babaf30e3be8'
+    }]
+  })
+
+  const {error} = await t.throws(request({
+    method: 'PUT',
+    headers: { authorization },
+    url: `http://localhost:${port}/api/competition/update?year=2018`,
+    json: true
+  }))
+  t.is(error.statusCode, 404)
+  t.true(error.message.includes('failed to fetch results from WDSF'))
 })

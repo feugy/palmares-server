@@ -12,19 +12,19 @@ test('should not build instance without ids', t =>
 
 test('should url take precedence over string dataUrls', t => {
   const competition = new Competition({id: '', url: 'url1', dataUrls: 'url2'})
-  t.true(competition.url === 'url1')
+  t.is(competition.url, 'url1')
   t.deepEqual(competition.dataUrls, ['url1'])
 })
 
 test('should url take precedence over empty dataUrls', t => {
   const competition = new Competition({id: '', url: 'url1'})
-  t.true(competition.url === 'url1')
+  t.is(competition.url, 'url1')
   t.deepEqual(competition.dataUrls, ['url1'])
 })
 
 test('should url not take precedence over array dataUrls', t => {
   const competition = new Competition({id: '', url: 'url1', dataUrls: ['url2']})
-  t.true(competition.url === 'url1')
+  t.is(competition.url, 'url1')
   t.deepEqual(competition.dataUrls, ['url2'])
 })
 

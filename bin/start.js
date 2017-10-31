@@ -1,11 +1,16 @@
+// read env variables
+require('dotenv').config()
 const startServer = require('../')
 
 startServer({
   port: process.env.PORT,
+  logLevel: 'info',
+  // storage options
   storage: {
     name: 'Mongo',
     url: process.env.MONGO_URL
   },
+  // provider options
   providers: [{
     name: 'FFDS',
     url: 'http://dansesportive.ffdanse.fr',
@@ -20,5 +25,9 @@ startServer({
     url: 'http://www.worlddancesport.org',
     list: 'Calendar/Competition/Results?format=csv&downloadFromDate=01/01/%1$s&downloadToDate=31/12/%1$s&kindFilter=Competition',
     dateFormat: 'YYYY/MM/DD'
-  }]
+  }],
+  // authentication options
+  auth: {
+    key: process.env.JWT_KEY
+  }
 })

@@ -2,6 +2,7 @@ const {Server} = require('hapi')
 const {notFound} = require('boom')
 const {resolve} = require('path')
 const {promisify} = require('util')
+const pino = require('pino')
 const readFile = promisify(require('fs').readFile)
 const iconv = require('iconv-lite')
 const MongoStorage = require('../lib/storages/mongodb')
@@ -11,6 +12,12 @@ const WDSFProvider = require('../lib/providers/wdsf')
 // read env variables
 require('dotenv').config()
 const isDebug = false
+
+/**
+ * Builds a test logger
+ * @returns {Object} Bunyan compatible logger
+ */
+exports.getLogger = () => pino({prettyPrint: true, level: isDebug ? 'trace' : 'silent'})
 
 /**
  * Creates a Storage for MongoDB, base on MONGO_URL env variable
@@ -23,7 +30,11 @@ exports.getMongoStorage = () => {
   if (!('MONGO_URL' in process.env)) {
     throw new Error('Please set MONGO_URL as environment variable')
   }
-  return new MongoStorage({url: process.env.MONGO_URL, suffix: `_${Math.floor(Math.random() * 100000)}`})
+  return new MongoStorage({
+    url: process.env.MONGO_URL,
+    logger: exports.getLogger(),
+    suffix: `_${Math.floor(Math.random() * 100000)}`
+  })
 }
 
 /**
@@ -34,6 +45,7 @@ exports.getMongoStorage = () => {
 exports.getFFDSProvider = port =>
   new FFDSProvider({
     name: 'FFDS',
+    logger: exports.getLogger(),
     url: `http://127.0.0.1:${port}`,
     list: 'compet-resultats.php',
     details: 'compet-resultats.php?NumManif=%1$s',
@@ -51,6 +63,7 @@ exports.getFFDSProvider = port =>
 exports.getWDSFProvider = port =>
   new WDSFProvider({
     name: 'WDSF',
+    logger: exports.getLogger(),
     url: `http://127.0.0.1:${port}`,
     list: 'Calendar/Competition/Results?format=csv&downloadFromDate=01/01/%1$s&downloadToDate=31/12/%1$s&kindFilter=Competition',
     dateFormat: 'YYYY/MM/DD'
@@ -80,26 +93,6 @@ exports.startWDSFServer = async (port, queryParams = [], pathParams = []) => {
         readFile(resolve('test', 'fixtures', `wdsf-result-${year}.csv`))
           .then(content => content.toString().replace(/http:\/\/www.worlddancesport.org\/Event/g, `http://localhost:${port}/Event`))
           .catch(err => { throw notFound(err) })
-      )
-    }
-  })
-
-  server.route({
-    method: 'GET',
-    path: '/Event/Competition/{competition}/',
-    handler: ({query, params: {competition}}, reply) => {
-      queryParams.push(JSON.parse(JSON.stringify(query)))
-      pathParams.push({competition})
-      reply(
-        readFile(resolve('test', 'fixtures',
-          (competition.includes('18979') || competition.includes('18978'))
-            ? '18979-details.html'
-            : competition.includes('19149')
-              ? '19149-details.html'
-              : competition.includes('21478')
-                ? '21478-details.html'
-                : competition
-        )).catch(err => notFound(err))
       )
     }
   })
@@ -146,14 +139,10 @@ exports.startWDSFServer = async (port, queryParams = [], pathParams = []) => {
                 : contest.includes('44884')
                   ? '5255-Yo-Std.html'
                   : `unknown ${competition}/${contest}`
-              : competition.includes('19149')
-                ? contest.includes('44511')
-                  ? '19149-Ad-Lat.html'
-                  : `unknown ${competition}/${contest}`
-                : competition.includes('21478')
-                  ? contest.includes('51883')
-                    ? '21478-J2-Std.html'
-                    : `unknown ${competition}/${contest}`
+              : competition.includes('19149') && contest.includes('44511')
+                ? '19149-Ad-Lat.html'
+                : competition.includes('21478') && contest.includes('51883')
+                  ? '21478-J2-Std.html'
                   : `unknown ${competition}/${contest}`
 
       reply(

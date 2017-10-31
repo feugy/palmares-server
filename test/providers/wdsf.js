@@ -29,28 +29,28 @@ test('should retrieve competition list', async t => {
     downloadFromDate: '01/01/2012',
     downloadToDate: '31/12/2012'
   })
-  t.true(results.length === 77)
+  t.is(results.length, 77)
 
   // competition with different names on same days and place have been merged
-  t.true(results[0].place === 'San Lazzaro Di Savena')
-  t.true(results[0].id === 'b38521030e81c5ddcc7cdeebbe4fe14f')
+  t.is(results[0].place, 'San Lazzaro Di Savena')
+  t.is(results[0].id, 'b38521030e81c5ddcc7cdeebbe4fe14f')
   t.true(results[0].date.isSame(moment.utc('2013-01-04')))
 
   // competition on several days have been merged
-  t.true(results[2].place === 'Moscow')
-  t.true(results[2].id === '7d00c5480c303ae032043495a6cc7d26')
+  t.is(results[2].place, 'Moscow')
+  t.is(results[2].id, '7d00c5480c303ae032043495a6cc7d26')
   t.true(results[2].date.isSame(moment.utc('2013-01-05')))
 
   // Kiev World Open, Kiev World Standard and Kiev Open have been merged into one competition
-  t.true(results[76].place === 'Kiev')
-  t.true(results[76].id === '4aee29e66d0644c811b8babaf30e3be8')
+  t.is(results[76].place, 'Kiev')
+  t.is(results[76].id, '4aee29e66d0644c811b8babaf30e3be8')
   t.true(results[76].date.isSame(moment.utc('2013-11-24')))
 })
 
 test('should handle error when fetching competition list', async t => {
   const err = await t.throws(service.listResults(2000), Error)
   t.true(err.message.includes('failed to fetch results from WDSF'))
-  t.true(err.output.statusCode === 404)
+  t.is(err.output.statusCode, 404)
 })
 
 test('should fetch simple competition contest list', async t => {
@@ -58,9 +58,12 @@ test('should fetch simple competition contest list', async t => {
     id: '7a217757907283d497436854677adabd',
     place: 'San Lazzaro Di Savena (bologna)',
     date: moment.utc('2013-01-04'),
-    url: `http://127.0.0.1:${port}/Event/Competition/Open-San_Lazzaro_di_Savena_(Bologna)-18979/`
+    dataUrls: [
+      `http://127.0.0.1:${port}/Event/Competition/Open-San_Lazzaro_di_Savena_(Bologna)-18979/Junior_II-Standard-44643`,
+      `http://127.0.0.1:${port}/Event/Competition/Open-San_Lazzaro_di_Savena_(Bologna)-18979/Junior_II-Latin-44644`
+    ]
   }))
-  t.true(competition.contests.length === 2)
+  t.is(competition.contests.length, 2)
   const contest = competition.contests
     .find(contest => contest.title === 'Junior II Latin Open')
   t.false(contest === undefined)
@@ -96,9 +99,9 @@ test('should handle cancelled contests', async t => {
     id: '',
     place: 'GrandSlam Moscow',
     date: moment('2016-10-28'),
-    url: `http://127.0.0.1:${port}/Event/Competition/GrandSlam-Moscow-19149/`
+    dataUrls: [`http://127.0.0.1:${port}/Event/Competition/GrandSlam-Moscow-19149/Adult-Latin-44511`]
   }))
-  t.true(competition.contests.length === 0)
+  t.is(competition.contests.length, 0)
 })
 
 test('should handle in progress contests', async t => {
@@ -106,7 +109,7 @@ test('should handle in progress contests', async t => {
     id: '',
     place: 'Open Moscow',
     date: moment('2017-10-29'),
-    url: `http://127.0.0.1:${port}/Event/Competition/Open-Moscow-21478/`
+    dataUrls: [`http://127.0.0.1:${port}/Event/Competition/Open-Moscow-21478/Junior_II-Standard-51883`]
   }))
-  t.true(competition.contests.length === 0)
+  t.is(competition.contests.length, 0)
 })

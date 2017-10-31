@@ -4,6 +4,7 @@ const Palmares = require('../lib/palmares')
 const Competition = require('../lib/models/competition')
 const {
   getFFDSProvider,
+  getLogger,
   getMongoStorage,
   getWDSFProvider,
   startFFDSServer,
@@ -28,7 +29,11 @@ test.after.always(async () => {
 
 test.beforeEach(t => {
   t.context.storage = getMongoStorage()
-  t.context.palmares = new Palmares(t.context.storage, [getFFDSProvider(ffdsPort), getWDSFProvider(wdsfPort)])
+  t.context.palmares = new Palmares(
+    t.context.storage,
+    [getFFDSProvider(ffdsPort), getWDSFProvider(wdsfPort)],
+    getLogger()
+  )
 })
 
 test.afterEach.always(t => {
@@ -41,27 +46,33 @@ test('should reject if no storage provided ', t => {
 })
 
 test('should reject if storage does\'t implement Storage', t => {
-  const err = t.throws(() => new Palmares(new Test(), []), Error)
+  const err = t.throws(() => new Palmares(new Test(), [], getLogger()), Error)
   t.true(err.message.includes('"storage" must be an instance of "Storage'))
 })
 
 test('should reject if no providers provided ', t => {
-  const err = t.throws(() => new Palmares(t.context.storage), Error)
+  const err = t.throws(() => new Palmares(t.context.storage, undefined, getLogger()), Error)
   t.true(err.message.includes('"providers" is required'))
 })
 
 test('should reject if providers does\'t implement Provider', t => {
-  const err = t.throws(() => new Palmares(t.context.storage, [new Test()]), Error)
+  const err = t.throws(() => new Palmares(t.context.storage, [new Test()], getLogger()), Error)
   t.true(err.message.includes('"0" must be an instance of "Provider'))
+})
+
+test('should reject if no logger is provided', t => {
+  const err = t.throws(() => new Palmares(t.context.storage, []), Error)
+  t.true(err.message.includes('"logger" is required'))
 })
 
 test('should fetch competitions for first time', async t => {
   const {storage, palmares} = t.context
-  const competitions = await palmares.update(2012)
-  t.true(competitions.length === 5)
+  const {competitions, year} = await palmares.update(2012)
+  t.is(year, 2012)
+  t.is(competitions.length, 7)
 
   const stored = await storage.find(Competition)
-  t.true(stored.length === 5)
+  t.is(stored.length, 7)
 })
 
 test('should fetch new competitions', async t => {
@@ -73,14 +84,16 @@ test('should fetch new competitions', async t => {
     url: 'http://127.0.0.1:9876/compet-resultats.php?NumManif=1313'
   }))
 
-  let competitions = await palmares.update(2012)
-  t.true(competitions.length === 4)
+  let results = await palmares.update(2012)
+  t.is(results.year, 2012)
+  t.is(results.competitions.length, 6)
 
-  competitions = await palmares.update(2016)
-  t.true(competitions.length === 0) // all cancelled
+  results = await palmares.update(2016)
+  t.is(results.year, 2016)
+  t.is(results.competitions.length, 0) // all cancelled
 
   const stored = await storage.find(Competition)
-  t.true(stored.length === 5)
+  t.is(stored.length, 7)
 })
 
 test('should handle provider error', async t => {
@@ -91,16 +104,15 @@ test('should handle provider error', async t => {
 test('should not update simultaneously', async t => {
   const {palmares} = t.context
 
-  let competitions = await Promise.all([
+  let results = await Promise.all([
     palmares.update(2012),
-    palmares.update(2012),
+    palmares.update(2013),
     palmares.update(2012)
   ])
-  t.is(competitions[0].length, 5)
-  t.is(competitions[1].length, 5)
-  t.is(competitions[2].length, 5)
-  t.deepEqual(competitions[0], competitions[1])
-  t.deepEqual(competitions[0], competitions[2])
+  t.is(results[0].competitions.length, 7)
+  t.is(results[0].year, 2012)
+  t.deepEqual(results[0], results[1])
+  t.deepEqual(results[0], results[2])
 })
 
 test('should not parallel update fail together', async t => {

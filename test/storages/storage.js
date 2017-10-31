@@ -1,26 +1,29 @@
 const test = require('ava').default
 const Storage = require('../../lib/storages/storage')
+const {getLogger} = require('../_test-utils')
 
-for (const {opts, expect} of [{
-  opts: undefined,
-  expect: /"opts" is required/
-}, {
-  opts: {},
-  expect: /"name" is required/
-}, {
-  opts: {name: 10},
-  expect: /"name" must be a string/
-}]) {
-  test(`should reject option ${JSON.stringify(opts)}`, t =>
-    t.throws(() => new Storage(opts), expect)
-  )
+const testOpts = async (t, opts, expected) => {
+  const err = t.throws(() => new Storage(opts), Error)
+  t.true(err.message.includes(expected))
 }
+testOpts.title = (providedTitle, opts) => `should reject options: ${JSON.stringify(opts)}`
 
-const storage = new Storage({name: 'test'})
+test(testOpts, undefined, '"opts" is required')
+test(testOpts, {}, '"name" is required')
+test(testOpts, {name: 10}, '"name" must be a string')
+test(testOpts, {name: 'test'}, '"logger" is required')
+test(testOpts, {name: 'test', logger: true}, '"logger" must be an object')
 
-for (const feature of ['findById', 'find', 'save', 'remove', 'removeAll']) {
-  test(`should report unimplemented ${feature}()`, async t => {
-    const err = await t.throws(storage[feature](), Error)
-    t.true(err.message.includes(`test does not implement "${feature}"`))
-  })
+const storage = new Storage({name: 'test', logger: getLogger()})
+
+const testMethod = async (t, feature) => {
+  const err = await t.throws(storage[feature](), Error)
+  t.true(err.message.includes(`test does not implement "${feature}"`))
 }
+testMethod.title = (providedTitle, feature) => `should report unimplemented ${feature}()`
+
+test(testMethod, 'findById')
+test(testMethod, 'find')
+test(testMethod, 'save')
+test(testMethod, 'remove')
+test(testMethod, 'removeAll')

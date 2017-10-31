@@ -4,9 +4,12 @@ const {MongoClient} = require('mongodb')
 const {randomBytes} = require('crypto')
 const MongoStorage = require('../../lib/storages/mongodb')
 const Competition = require('../../lib/models/competition')
-const {getMongoStorage} = require('../_test-utils')
+const {getMongoStorage, getLogger} = require('../_test-utils')
 
-const disconnectedStorage = new MongoStorage({url: 'mongodb://unknown:6541/unknown'})
+const disconnectedStorage = new MongoStorage({
+  url: 'mongodb://unknown:6541/unknown',
+  logger: getLogger()
+})
 class Test {}
 
 /**
@@ -50,10 +53,7 @@ test.afterEach.always(async t => {
 
 // ------- constructor
 test('should fail when build without required options', t => {
-  let err = t.throws(() => new MongoStorage(), Error)
-  t.true(err.message.includes('"opts" is required'))
-
-  err = t.throws(() => new MongoStorage({}), Error)
+  const err = t.throws(() => new MongoStorage({logger: getLogger()}), Error)
   t.true(err.message.includes('"url" is required'))
 })
 
@@ -66,7 +66,7 @@ test('should return empty results on empty model collection', async t => {
     // ignore
   }
   const fetched = await storage.find(Competition)
-  t.true(fetched.length === 0)
+  t.is(fetched.length, 0)
 })
 
 test('should return all models', async t => {
@@ -88,11 +88,11 @@ test('should return all models', async t => {
 
   let competition = fetched.find(c => c.id === insertedIds[0])
   t.false(competition === undefined)
-  t.true(competition.place === 'Marseille')
+  t.is(competition.place, 'Marseille')
 
   competition = fetched.find(c => c.id === insertedIds[1])
   t.false(competition === undefined)
-  t.true(competition.place === 'Lille')
+  t.is(competition.place, 'Lille')
 })
 
 test('should return all by query', async t => {
@@ -121,7 +121,7 @@ test('should return all by query', async t => {
   t.false(competition === undefined)
 
   competition = fetched.find(c => c.id === insertedIds[1])
-  t.true(competition === undefined)
+  t.is(competition, undefined)
 
   competition = fetched.find(c => c.id === insertedIds[2])
   t.false(competition === undefined)
@@ -135,7 +135,7 @@ test('should handle disconnection error when finding model', async t => {
 // ------- removeAll
 test('should drop empty model collection', async t => {
   const result = await t.context.storage.removeAll(Competition)
-  t.true(result === undefined)
+  t.is(result, undefined)
 })
 
 test('should handle disconnection error when removing all models', async t => {
@@ -159,7 +159,7 @@ test('should save a competition', async t => {
   })
 
   const saved = await storage.save(competition)
-  t.true(competition === saved)
+  t.is(competition, saved)
 
   const results = await runOperation(storage, 'competition', 'findOne', {_id: competition.id})
   t.false(results === null)
@@ -185,7 +185,7 @@ test('should update a competition', async t => {
 
   // save
   let saved = await storage.save(competition)
-  t.true(competition === saved)
+  t.is(competition, saved)
 
   let results = await runOperation(storage, 'competition', 'findOne', {_id: competition.id})
   t.deepEqual(
@@ -200,7 +200,7 @@ test('should update a competition', async t => {
   })
   competition.url = 'nevermind 2'
   saved = await storage.save(competition)
-  t.true(competition === saved)
+  t.is(competition, saved)
 
   results = await runOperation(storage, 'competition', 'findOne', {_id: competition.id})
   t.deepEqual(
@@ -238,16 +238,16 @@ test('should remove a competition', async t => {
   await storage.remove(competition)
 
   let fetched = await storage.findById(Competition, competition.id)
-  t.true(fetched === null)
+  t.is(fetched, null)
 
   const results = await runOperation(storage, 'competition', 'findOne', {_id: competition.id})
-  t.true(results === null)
+  t.is(results, null)
 })
 
 // ------- findById
 test('should return null when fetching unknown ids', async t => {
   const fetched = await t.context.storage.findById(Competition, `${Math.floor(Math.random() * 10000)}`)
-  t.true(fetched === null)
+  t.is(fetched, null)
 })
 
 test('should retrieve a competition by id', async t => {

@@ -1,8 +1,8 @@
 const test = require('ava').default
-const moment = require('moment')
+const moment = require('moment-timezone')
 const FFDSProvider = require('../../lib/providers/ffds')
 const Competition = require('../../lib/models/competition')
-const {startFFDSServer, getFFDSProvider} = require('../_test-utils')
+const {startFFDSServer, getFFDSProvider, getLogger} = require('../_test-utils')
 
 const port = 9124
 const club = 'Aix-en-Provence/AUC- DS'
@@ -26,6 +26,7 @@ const expectedClubs = [
   'Villeurbanne/TS'
 ]
 const service = getFFDSProvider(port)
+const tz = 'Europe/Paris'
 let server = null
 
 test.before('given a running server', async () => {
@@ -38,6 +39,7 @@ test('should fail to build provider without required options', t =>
   t.throws(() =>
     new FFDSProvider({
       name: 'FFDS',
+      logger: getLogger(),
       url: `http://127.0.0.1:${port}`,
       list: 'compet-resultats.php',
       dateFormat: 'DD/MM/YYYY'
@@ -47,45 +49,45 @@ test('should fail to build provider without required options', t =>
 
 test('should retrieve competition list', async t => {
   const results = await service.listResults(2012)
-  t.true(results.length === 27)
+  t.is(results.length, 27)
 
-  t.true(results[25].place === 'Marseille')
-  t.true(results[25].id === '21f4eb195bc7de2678b1fb8665d79a28')
-  t.true(results[25].date.isSame('2013-03-23'))
+  t.is(results[25].place, 'Marseille')
+  t.is(results[25].id, '21f4eb195bc7de2678b1fb8665d79a28')
+  t.true(results[25].date.isSame(moment.tz('2013-03-23', tz)))
 
-  t.true(results[21].place === 'Illzach')
-  t.true(results[21].id === '45ca729adf5a8b963b73bbd6197d3a32')
-  t.true(results[21].date.isSame('2013-02-17'))
+  t.is(results[21].place, 'Illzach')
+  t.is(results[21].id, '45ca729adf5a8b963b73bbd6197d3a32')
+  t.true(results[21].date.isSame(moment.tz('2013-02-17', tz)))
 
-  t.true(results[18].place === 'Vénissieux')
-  t.true(results[18].id === 'a486d8b5adb8513ea86df8678ff6b225')
-  t.true(results[18].date.isSame('2013-02-09'))
+  t.is(results[18].place, 'Vénissieux')
+  t.is(results[18].id, 'a486d8b5adb8513ea86df8678ff6b225')
+  t.true(results[18].date.isSame(moment.tz('2013-02-09', tz)))
 
-  t.true(results[0].place === 'Rouen')
-  t.true(results[0].id === '5c7841d62a598afa46e9e931d0112733')
-  t.true(results[0].date.isSame('2012-10-06'))
+  t.is(results[0].place, 'Rouen')
+  t.is(results[0].id, '5c7841d62a598afa46e9e931d0112733')
+  t.true(results[0].date.isSame(moment.tz('2012-10-06', tz)))
 })
 
 test('should handle error when fetching competition list', async t => {
   const err = await t.throws(service.listResults(new Date().getFullYear()), Error)
   t.true(err.message.includes('failed to fetch results from FFDS'))
-  t.true(err.output.statusCode === 404)
+  t.is(err.output.statusCode, 404)
 })
 
 test('should multiple competition on same day and same place be merged', async t => {
   const results = await service.listResults(2012)
-  t.true(results.length === 27)
+  t.is(results.length, 27)
   const competition = results[26]
 
-  t.true(competition.place === 'Lillebonne')
-  t.true(competition.id === '1e42c28c5d99ad5f86d4ae2cfc74c848')
-  t.true(competition.date.isSame('2013-08-13'))
+  t.is(competition.place, 'Lillebonne')
+  t.is(competition.id, '1e42c28c5d99ad5f86d4ae2cfc74c848')
+  t.true(competition.date.isSame(moment.tz('2013-08-13', tz)))
   t.deepEqual(competition.dataUrls, [
     `http://127.0.0.1:${port}/compet-resultats.php?NumManif=1423`,
     `http://127.0.0.1:${port}/compet-resultats.php?NumManif=1424`
   ])
   const detailedCompetition = await service.getDetails(competition)
-  t.true(detailedCompetition.contests.length === 54)
+  t.is(detailedCompetition.contests.length, 54)
   t.deepEqual(detailedCompetition.contests[0], {
     title: 'Adultes C Latines',
     results: {
@@ -131,7 +133,7 @@ test('should fetch simple competition contest list', async t => {
     date: moment('2013-02-17'),
     url: `http://127.0.0.1:${port}/compet-resultats.php?NumManif=1313`
   }))
-  t.true(competition.contests.length === 5)
+  t.is(competition.contests.length, 5)
   const contest = competition.contests
     .find(contest => contest.title === 'Championnat Régional Séniors II Séniors III E D C B A Latines')
   t.false(contest === undefined)
@@ -151,7 +153,7 @@ test('should fetch complex competition contest list', async t => {
     date: moment('2013-03-23'),
     url: `http://127.0.0.1:${port}/compet-resultats.php?NumManif=1248`
   }))
-  t.true(competition.contests.length === 9)
+  t.is(competition.contests.length, 9)
   let contest = competition.contests.find(contest => contest.title === 'Juvéniles II E Latines')
   t.false(contest === undefined)
   t.deepEqual(contest.results, {
@@ -213,7 +215,7 @@ test('should groups be searched', async t => {
 
 test('should search groups return empty results', async t => {
   const results = await service.searchGroups('Toto')
-  t.true(results.length === 0)
+  t.is(results.length, 0)
 })
 
 test('should search known couples return results', async t => {
@@ -228,7 +230,7 @@ test('should search known couples return results', async t => {
 
 test('should search unknown couples return results', async t => {
   const results = await service.searchCouples('toto')
-  t.true(results.length === 0)
+  t.is(results.length, 0)
 })
 
 test('should failed to search group without parameter', async t => {
@@ -243,5 +245,5 @@ test('should failed search group couples of on unkwnown club', async t => {
 
 test('should search group couples of empty club', async t => {
   const results = await service.getGroupCouples('Abbeville/sca')
-  t.true(results.length === 0)
+  t.is(results.length, 0)
 })

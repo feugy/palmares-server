@@ -40,7 +40,7 @@ test('should run promises in pools', async t => {
         return i
       })
     , 3)
-  t.true(order.length === 10)
+  t.is(order.length, 10)
   t.deepEqual(result, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
 })
 
