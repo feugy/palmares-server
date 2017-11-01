@@ -13,6 +13,8 @@ const WDSFProvider = require('../lib/providers/wdsf')
 require('dotenv').config()
 const isDebug = false
 
+const fixtures = resolve('server', 'test', 'fixtures')
+
 /**
  * Builds a test logger
  * @returns {Object} Bunyan compatible logger
@@ -90,7 +92,7 @@ exports.startWDSFServer = async (port, queryParams = [], pathParams = []) => {
       queryParams.push(JSON.parse(JSON.stringify(query)))
       const year = query.downloadFromDate.replace('01/01/', '')
       reply(
-        readFile(resolve('test', 'fixtures', `wdsf-result-${year}.csv`))
+        readFile(resolve(fixtures, `wdsf-result-${year}.csv`))
           .then(content => content.toString().replace(/http:\/\/www.worlddancesport.org\/Event/g, `http://localhost:${port}/Event`))
           .catch(err => { throw notFound(err) })
       )
@@ -146,7 +148,7 @@ exports.startWDSFServer = async (port, queryParams = [], pathParams = []) => {
                   : `unknown ${competition}/${contest}`
 
       reply(
-        readFile(resolve('test', 'fixtures', file))
+        readFile(resolve(fixtures, file))
           .catch(err => notFound(err))
       )
     }
@@ -184,7 +186,7 @@ exports.startFFDSServer = async port => {
               : 'ffds-clubs.html'
 
       reply(
-        readFile(resolve('test', 'fixtures', file))
+        readFile(resolve(fixtures, file))
           .then(content => iconv.encode(content, charset))
           .catch(err => notFound(err))
       ).charset(charset)
@@ -247,7 +249,7 @@ exports.startFFDSServer = async port => {
                   : 'ffds-result.html'
 
       reply(
-        readFile(resolve('test', 'fixtures', file))
+        readFile(resolve(fixtures, file))
           .then(content => iconv.encode(content, charset))
           .catch(err => notFound(err))
       ).charset(charset)

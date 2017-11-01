@@ -4,7 +4,7 @@ const {join} = require('path')
 const {safeLoad} = require('js-yaml')
 const {readFileSync} = require('fs')
 const {merge} = require('lodash/fp')
-const startServer = require('../')
+const startServer = require('../server/lib/server')
 
 startServer(merge({
   port: process.env.PORT,

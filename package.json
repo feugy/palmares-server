@@ -2,7 +2,6 @@
   "name": "palmares-server",
   "version": "1.0.0",
   "description": "Online server for Palmarès web application",
-  "main": "lib/server.js",
   "engines": {
     "node": ">=8.4.x"
   },
@@ -59,9 +58,12 @@
     "nsp": "~2.8.1",
     "nyc": "~11.2.1"
   },
+  "ava": {
+    "files": ["server/test/**/*.js"]
+  },
   "nyc": {
     "include": [
-      "lib/**/*"
+      "server/lib/**/*"
     ],
     "all": true,
     "check-coverage": true,
