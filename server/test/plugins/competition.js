@@ -98,9 +98,9 @@ test.before(async () => {
   server.decorate('request', 'storage', storage)
   server.decorate('request', 'palmares', palmares)
   await server.register([{
-    register: require('../../lib/utils/authentication'),
+    register: require('../../lib/plugins/authentication'),
     options: { key: process.env.JWT_KEY }
-  }, require('../../lib/api/competition')])
+  }, require('../../lib/plugins/competition')])
   await server.start()
 })
 
