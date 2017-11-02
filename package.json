@@ -54,6 +54,7 @@
   "devDependencies": {
     "ava": "~0.23.0",
     "bankai": "~9.0.0-rc9",
+    "browser-env": "3.2.1",
     "choo-devtools": "~2.1.0",
     "coveralls": "~3.0.0",
     "eslint": "~4.9.0",
@@ -71,17 +72,19 @@
     "npm-run-all": "~4.1.1",
     "nsp": "~2.8.1",
     "nyc": "~11.2.1",
-    "rimraf": "2.6.2"
+    "rimraf": "2.6.2",
+    "sinon": "4.1.0"
   },
   "ava": {
     "files": [
+      "client/test/**/*.js",
       "server/test/**/*.js",
-			"!server/test/test-utils.js"
+      "!server/test/test-utils.js"
     ],
     "source": [
-			"**/*.js",
-			"!client/dist/**/*"
-		]
+      "**/*.js",
+      "!client/dist/**/*"
+    ]
   },
   "nodemonConfig": {
     "watch": [
@@ -93,6 +96,7 @@
   },
   "nyc": {
     "include": [
+      "client/lib/**/*",
       "server/lib/**/*"
     ],
     "all": true,
