@@ -2,7 +2,7 @@ const test = require('ava').default
 const moment = require('moment-timezone')
 const FFDSProvider = require('../../lib/providers/ffds')
 const Competition = require('../../lib/models/competition')
-const {startFFDSServer, getFFDSProvider, getLogger} = require('../_test-utils')
+const {startFFDSServer, getFFDSProvider, getLogger} = require('../test-utils')
 
 const port = 9124
 const club = 'Aix-en-Provence/AUC- DS'

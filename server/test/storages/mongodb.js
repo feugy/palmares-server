@@ -4,7 +4,7 @@ const {MongoClient} = require('mongodb')
 const {randomBytes} = require('crypto')
 const MongoStorage = require('../../lib/storages/mongodb')
 const Competition = require('../../lib/models/competition')
-const {getMongoStorage, getLogger} = require('../_test-utils')
+const {getMongoStorage, getLogger} = require('../test-utils')
 
 const disconnectedStorage = new MongoStorage({
   url: 'mongodb://unknown:6541/unknown',

@@ -9,7 +9,7 @@ const {
   getWDSFProvider,
   startFFDSServer,
   startWDSFServer
-} = require('./_test-utils')
+} = require('./test-utils')
 
 class Test {}
 let ffdsServer

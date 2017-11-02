@@ -6,11 +6,11 @@
     "node": ">=8.4.x"
   },
   "scripts": {
-    "build": "bankai build client/index.js",
+    "build": "bankai build client",
     "dev": "npm-run-all -plr dev:server dev:client",
-    "dev:client": "bankai start client/index.js -q",
+    "dev:client": "bankai start client -q",
     "dev:server": "nodemon bin/start | pino",
-    "inspect": "bankai inspect client/index.js",
+    "inspect": "bankai inspect client",
     "install": "npm run build",
     "lint": "eslint server --fix --ignore-path .gitignore",
     "nsp": "nsp check",
@@ -66,14 +66,22 @@
     "eslint-plugin-standard": "~3.0.1",
     "iconv-lite": "~0.4.19",
     "nodemon": "~1.12.1",
+    "npm-programmatic": "0.0.8",
+    "npm-run": "4.1.2",
     "npm-run-all": "~4.1.1",
     "nsp": "~2.8.1",
-    "nyc": "~11.2.1"
+    "nyc": "~11.2.1",
+    "rimraf": "2.6.2"
   },
   "ava": {
     "files": [
-      "server/test/**/*.js"
-    ]
+      "server/test/**/*.js",
+			"!server/test/test-utils.js"
+    ],
+    "source": [
+			"**/*.js",
+			"!client/dist/**/*"
+		]
   },
   "nodemonConfig": {
     "watch": [

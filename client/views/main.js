@@ -11,12 +11,11 @@ module.exports = (state, emit) => {
   return html`
     <body>
       <h1>
-        Choo choo!!!
+        Choo choo!
       </h1>
 
       <div>
         <p>Current number of clicks: ${state.totalClicks}</p>
-
         <button onclick=${handleClick}>Click Me!</button>
         <a href="/bla">Trigger 404</a>
       </div>

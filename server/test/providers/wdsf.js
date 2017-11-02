@@ -1,7 +1,7 @@
 const test = require('ava').default
 const moment = require('moment')
 const Competition = require('../../lib/models/competition')
-const {startWDSFServer, getWDSFProvider} = require('../_test-utils')
+const {startWDSFServer, getWDSFProvider} = require('../test-utils')
 
 const port = 9123
 const service = getWDSFProvider(port)

@@ -11,7 +11,7 @@ const {
   getWDSFProvider,
   startFFDSServer,
   startWDSFServer
-} = require('../_test-utils')
+} = require('../test-utils')
 
 let server
 const port = 9874

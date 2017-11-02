@@ -1,6 +1,6 @@
 const test = require('ava').default
 const Provider = require('../../lib/providers/provider')
-const {getLogger} = require('../_test-utils')
+const {getLogger} = require('../test-utils')
 
 const testOpts = async (t, opts, expected) => {
   const err = t.throws(() => new Provider(opts), Error)

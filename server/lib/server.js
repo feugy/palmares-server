@@ -1,6 +1,5 @@
 const {Server} = require('hapi')
 const Joi = require('joi')
-const {resolve} = require('path')
 const MongoStorage = require('./storages/mongodb')
 const FFDSProvider = require('./providers/ffds')
 const WDSFProvider = require('./providers/wdsf')
@@ -45,14 +44,7 @@ module.exports = async (opts) => {
   }
 
   const server = new Server()
-  server.connection({
-    port: opts.port,
-    routes: {
-      files: {
-        relativeTo: resolve(__dirname, '..', '..')
-      }
-    }
-  })
+  server.connection({port: opts.port})
 
   await server.register({
     register: require('hapi-pino'),

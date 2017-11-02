@@ -3,8 +3,8 @@ const {sortBy} = require('lodash/fp')
 
 module.exports = {
   ...require('./promises'),
-
   ...require('./sanitize'),
+  ...require('./conf'),
 
   /**
    * Catch handler that:
