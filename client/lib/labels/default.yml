@@ -1,0 +1,24 @@
+buttons:
+  backToList: Liste des compétitions
+  backToMain: Retour à l'accueil
+
+formats:
+  competitionDate: DD/MM/YY
+
+labels:
+  emptyCompetitionList: Aucune compétition pour l'instant
+  loading: Chargement
+
+errors:
+  competitionList: Impossible de charger la liste des compétitions :${message}
+  currentCompetition: Impossible de charger la compétition :${message}
+
+pageTitles:
+  main: Palmarès
+  notFound: Palmarès - introuvable
+  competitionDetails: Palmarès - ${place}
+
+titles:
+  competitions: Compétitions
+  competitionDetails: Compétition - ${place}
+  notFound: Page non trouvée !

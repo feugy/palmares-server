@@ -2,6 +2,9 @@
 
 **Work in progress !**
 
+# To do
+- [ ] refresh dist bundle on changes (running dev)
+
 [license-image]: https://img.shields.io/badge/license-MIT-blue.svg
 [license-url]: https://github.com/feugy/palmares-server/blob/master/LICENSE
 [david-image]: https://img.shields.io/david/feugy/palmares-server.svg
