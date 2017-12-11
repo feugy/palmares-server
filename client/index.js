@@ -13,7 +13,7 @@ if (process.env.NODE_ENV !== 'production') {
 
 // define routes
 app.route('/', views.competitions)
-// app.route('/competitions', views.competitions)
+app.route('/competitions', views.competitions)
 app.route('/competition/:id', views.competitionDetails)
 app.route('/*', views['404'])
 

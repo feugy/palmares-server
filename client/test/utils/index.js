@@ -11,5 +11,5 @@ test('should timeout be asynchronous', async t => {
 test('should timeout run after N milliseconds', async t => {
   const start = performance.now()
   await timeout(10)
-  t.true(performance.now() - start >= 10)
+  t.true(performance.now() - start >= 9)
 })

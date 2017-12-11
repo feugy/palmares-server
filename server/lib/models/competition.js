@@ -29,6 +29,9 @@ module.exports = class Competition {
    * @returns a plain JSON representation of this competition
    */
   toJSON () {
-    return Object.assign({}, this, {date: this.date.toDate()})
+    return {
+      ...this,
+      date: this.date.toDate()
+    }
   }
 }
