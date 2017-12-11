@@ -28,6 +28,7 @@ exports.readConf = async path => {
     throw new Error(`failed to parse configuration from file ${path}: ${err.message}`)
   }
   return merge({
+    isProd: /prod(uction)?/i.test(process.env.NODE_ENV),
     port: process.env.PORT,
     storage: {
       url: process.env.MONGO_URL

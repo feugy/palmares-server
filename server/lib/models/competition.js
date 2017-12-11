@@ -13,6 +13,7 @@ module.exports = class Competition {
     // competition id
     this.id = null
     this.contests = []
+    this.url = null
 
     Object.assign(this, attrs)
     if (this.id == null) {
@@ -28,9 +29,6 @@ module.exports = class Competition {
    * @returns a plain JSON representation of this competition
    */
   toJSON () {
-    return {
-      ...this,
-      date: this.date.toDate()
-    }
+    return Object.assign({}, this, {date: this.date.toDate()})
   }
 }

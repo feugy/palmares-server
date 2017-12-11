@@ -93,12 +93,21 @@ test.before(async () => {
   await Promise.all(competitions.map(c => storage.save(c)))
 
   // server for api testing
-  server = new Server()// {debug: {request: ['error']}})
-  server.connection({port})
+  server = new Server({
+    port,
+    routes: {
+      validate: {
+        failAction: (request, h, err) => {
+          throw err
+        }
+      }
+    },
+    debug: false // {request: ['error']}
+  })
   server.decorate('request', 'storage', storage)
   server.decorate('request', 'palmares', palmares)
   await server.register([{
-    register: require('../../lib/plugins/authentication'),
+    plugin: require('../../lib/plugins/authentication'),
     options: { key: process.env.JWT_KEY }
   }, require('../../lib/plugins/competition')])
   await server.start()
@@ -113,8 +122,8 @@ test.after.always(async () => {
 
 const testQuery = async (t, input, expected) => {
   const {error} = await t.throws(request({url: `http://localhost:${port}/api/competition?${input}`, json: true}))
-  t.true(error.message.includes(expected))
   t.is(error.statusCode, 400)
+  t.true(error.message.includes(expected))
 }
 testQuery.title = (providedTitle, input, expected) => `should reject query: ${input}`
 

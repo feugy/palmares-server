@@ -9,19 +9,19 @@ const compactFields = ['id', 'place', 'provider', 'date', 'url', 'dataUrls']
  * Register competition endpoints.
  * Assumes server to attach storage to request.
  */
-exports.register = (server, options, next) => {
+exports.register = async server => {
   // list competitions
   server.route({
     method: 'GET',
     path: '/api/competition',
-    handler: async ({query: {offset, size, provider}, storage}, reply) => {
+    handler: async ({query: {offset, size, provider}, storage}) => {
       const criteria = provider ? {provider} : {}
       const values = await storage.find(Competition, criteria, compactFields, offset, size)
-      reply({
+      return {
         offset,
         size: values.length < size ? values.length : size,
         values
-      })
+      }
     },
     config: {
       tags: ['api'],
@@ -45,9 +45,12 @@ exports.register = (server, options, next) => {
   server.route({
     method: 'GET',
     path: '/api/competition/{id}',
-    handler: async ({params: {id}, storage}, reply) => {
+    handler: async ({params: {id}, storage}) => {
       const competition = await storage.findById(Competition, id)
-      reply(competition || notFound(`no competition with id ${id}`))
+      if (!competition) {
+        throw notFound(`no competition with id ${id}`)
+      }
+      return competition
     },
     config: {
       tags: ['api'],
@@ -66,11 +69,11 @@ exports.register = (server, options, next) => {
   server.route({
     method: 'PUT',
     path: '/api/competition/update',
-    handler: async ({palmares, query: {year: desiredYear}}, reply) => {
+    handler: async ({palmares, query: {year: desiredYear}}) => {
       const fetchedYear = desiredYear || new Date().getFullYear()
       const {competitions, year} = await palmares.update(fetchedYear)
       // group competitions by providers
-      reply({
+      return {
         year,
         ...competitions.reduce((groups, competition) => {
           const {provider, place, date, id} = competition
@@ -80,7 +83,7 @@ exports.register = (server, options, next) => {
           groups[provider].push({place, date, id})
           return groups
         }, {})
-      })
+      }
     },
     config: {
       auth: 'jwt',
@@ -95,8 +98,6 @@ exports.register = (server, options, next) => {
       }
     }
   })
-
-  next()
 }
 
-exports.register.attributes = {name: 'collection'}
+exports.name = 'collection'

@@ -26,14 +26,15 @@ const randomId = () => randomBytes(16).toString('hex').slice(0, 32)
  * @param {..any} args - arguments for the operation itself
  */
 const runOperation = async (storage, collection, operation, ...args) => {
-  const db = await MongoClient.connect(storage.opts.url)
+  const client = await MongoClient.connect(storage.opts.url)
+  const database = storage.opts.url.match(/\/([^/]+)$/)[1]
   try {
-    const col = await db.collection(collection + storage.opts.suffix)
+    const col = client.db(database).collection(collection + storage.opts.suffix)
     const results = await col[operation](...args)
-    await db.close()
+    await client.close()
     return results
   } catch (err) {
-    await db.close()
+    await client.close()
     throw err
   }
 }

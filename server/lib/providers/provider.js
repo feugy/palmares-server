@@ -21,10 +21,7 @@ module.exports = class Provider {
    */
   constructor (opts) {
     // Provider configuration options. @see constructor
-    const {error} = Joi.validate(opts, optsSchema)
-    if (error) {
-      throw error
-    }
+    Joi.assert(opts, optsSchema, `Failed to build provider`)
     this.opts = opts
     const {logger, ...other} = this.opts
     opts.logger.debug({opts: other}, 'provider built')

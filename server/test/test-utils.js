@@ -82,27 +82,30 @@ exports.getWDSFProvider = port =>
  */
 exports.startWDSFServer = async (port, queryParams = [], pathParams = []) => {
   // creates a fake server
-  const server = new Server(isDebug && {debug: {request: ['error']}})
-  server.connection({port})
+  const server = new Server({
+    port,
+    debug: isDebug ? {request: ['error']} : false
+  })
 
   server.route({
     method: 'GET',
     path: '/Calendar/Competition/Results',
-    handler: ({query}, reply) => {
+    handler: async ({query}) => {
       queryParams.push(JSON.parse(JSON.stringify(query)))
       const year = query.downloadFromDate.replace('01/01/', '')
-      reply(
-        readFile(resolve(fixtures, `wdsf-result-${year}.csv`))
-          .then(content => content.toString().replace(/http:\/\/www.worlddancesport.org\/Event/g, `http://localhost:${port}/Event`))
-          .catch(err => { throw notFound(err) })
-      )
+      try {
+        const content = await readFile(resolve(fixtures, `wdsf-result-${year}.csv`))
+        return content.toString().replace(/http:\/\/www.worlddancesport.org\/Event/g, `http://localhost:${port}/Event`)
+      } catch (err) {
+        throw notFound(err)
+      }
     }
   })
 
   server.route({
     method: 'GET',
     path: '/Event/Competition/{competition}/{contest}/Ranking',
-    handler: ({query, params: {competition, contest}}, reply) => {
+    handler: async ({query, params: {competition, contest}}) => {
       queryParams.push(JSON.parse(JSON.stringify(query)))
       pathParams.push({competition, contest})
       const file = competition.includes('18979') || competition.includes('18978')
@@ -147,10 +150,11 @@ exports.startWDSFServer = async (port, queryParams = [], pathParams = []) => {
                   ? '21478-J2-Std.html'
                   : `unknown ${competition}/${contest}`
 
-      reply(
-        readFile(resolve(fixtures, file))
-          .catch(err => notFound(err))
-      )
+      try {
+        return await readFile(resolve(fixtures, file))
+      } catch (err) {
+        throw notFound(err)
+      }
     }
   })
 
@@ -168,13 +172,15 @@ exports.startFFDSServer = async port => {
   const charset = 'iso-8859-1'
 
   // creates a fake server
-  const server = new Server(isDebug && {debug: {request: ['error']}})
-  server.connection({port})
+  const server = new Server({
+    port,
+    debug: isDebug ? {request: ['error']} : false
+  })
 
   server.route({
     method: 'GET',
     path: '/compet-situation.php',
-    handler: ({query: {club_id: club, couple_name: couple}}, reply) => {
+    handler: async ({query: {club_id: club, couple_name: couple}}, h) => {
       const file = club === '1118'
         ? 'ffds-aix-en-provence-auc-ds.html'
         : club === '391'
@@ -184,21 +190,23 @@ exports.startFFDSServer = async port => {
             : couple && couple.toLowerCase() === 'toto'
               ? 'ffds-search-empty.html'
               : 'ffds-clubs.html'
-
-      reply(
-        readFile(resolve(fixtures, file))
-          .then(content => iconv.encode(content, charset))
-          .catch(err => notFound(err))
-      ).charset(charset)
+      try {
+        const content = await readFile(resolve(fixtures, file))
+        const response = h.response(iconv.encode(content, charset))
+        response.charset(charset)
+        return response
+      } catch (err) {
+        throw notFound(err)
+      }
     }
   })
 
   server.route({
     method: 'GET',
     path: '/compet-resultats.php',
-    handler: ({query: {NumManif, Compet, Archives}}, reply) => {
+    handler: async ({query: {NumManif, Compet, Archives}}, h) => {
       if (Archives === undefined && NumManif === undefined) {
-        return reply(notFound())
+        throw notFound()
       }
       const file = NumManif === '1313'
         ? Compet === 'Champ-R-A-EDCBA-L'
@@ -247,12 +255,14 @@ exports.startFFDSServer = async port => {
                 : NumManif === '1426'
                   ? '1426-details.html'
                   : 'ffds-result.html'
-
-      reply(
-        readFile(resolve(fixtures, file))
-          .then(content => iconv.encode(content, charset))
-          .catch(err => notFound(err))
-      ).charset(charset)
+      try {
+        const content = await readFile(resolve(fixtures, file))
+        const response = h.response(iconv.encode(content, charset))
+        response.charset(charset)
+        return response
+      } catch (err) {
+        throw notFound(err)
+      }
     }
   })
 

@@ -31,7 +31,7 @@ const confPath = resolve(__dirname, '..', '..', 'conf', 'test.yml')
 
 test('should be started with all options', async t => {
   const port = 9873
-  const server = await startServer(merge(await readConf(confPath))({port}))
+  const server = await startServer(merge(await readConf(confPath))({port, isProd: true}))
 
   await request({url: `http://localhost:${port}/api/competition`, json: true})
   await server.stop()
@@ -48,7 +48,7 @@ test('should only render server side with dist', async t => {
   }
 
   // start server, and request root page, which shouldn't exist
-  let server = await startServer(merge(await readConf(confPath))({port}))
+  let server = await startServer(merge(await readConf(confPath))({port, isProd: true}))
   let result = await request({url: `http://localhost:${port}/`, simple: false, json: true})
   await server.stop()
   t.is(result.statusCode, 404)
@@ -57,7 +57,7 @@ test('should only render server side with dist', async t => {
   await exec('bankai build client')
 
   // restart server (to reload dist client), and request root page, which should exist
-  server = await startServer(merge(await readConf(confPath))({port}))
+  server = await startServer(merge(await readConf(confPath))({port, isProd: true}))
   result = await request({url: `http://localhost:${port}/`})
   await server.stop()
   t.true(result.includes('body'))

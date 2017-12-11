@@ -17,7 +17,7 @@ module.exports = {
    */
   handleRequestError: (message, err, logger, ctx) => {
     const error = err.statusCode
-      ? Boom.create(err.statusCode, message, {url: err.options.url, body: err.error})
+      ? new Boom(message, {statusCode: err.statusCode, data: {url: err.options.url, body: err.error}})
       : err
     logger.warn(Object.assign(ctx, {error}), 'operation failed')
     throw error

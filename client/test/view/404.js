@@ -14,11 +14,11 @@ test.cb('should display error message and set title', t => {
   const {state, emit, emitter} = t.context
 
   emitter.on(state.events.DOMTITLECHANGE, title => {
-    t.true(title.includes('route not found'))
+    t.true(title.includes('introuvable'))
     setTimeout(t.end, 0)
   })
 
   const html = view(state, emit)
 
-  t.is(html.querySelector('h1').textContent, '404 - route not found')
+  t.is(html.querySelector('h1').textContent, 'Page non trouvée !')
 })

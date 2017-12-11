@@ -18,10 +18,7 @@ module.exports = class Storage {
    */
   constructor (opts) {
     // Provider configuration options. @see constructor
-    const {error} = Joi.validate(opts, optsSchema)
-    if (error) {
-      throw error
-    }
+    Joi.assert(opts, optsSchema)
     this.opts = opts
   }
 

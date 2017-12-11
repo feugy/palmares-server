@@ -43,11 +43,19 @@ module.exports = async (opts) => {
     throw error
   }
 
-  const server = new Server()
-  server.connection({port: opts.port})
+  const server = new Server({
+    port: opts.port,
+    routes: {
+      validate: {
+        failAction: (request, h, err) => {
+          throw err
+        }
+      }
+    }
+  })
 
   await server.register({
-    register: require('hapi-pino'),
+    plugin: require('hapi-pino'),
     options: {
       logEvents: ['onPostStart', 'onPostStop', 'request-error']
     }
@@ -72,11 +80,11 @@ module.exports = async (opts) => {
 
   await server.register([
     {
-      register: require('./plugins/authentication'),
+      plugin: require('./plugins/authentication'),
       options: opts.auth
     },
     require('./plugins/competition'),
-    require('./plugins/static')
+    require(opts.isProd ? './plugins/static' : './plugins/dev-server')
   ])
   await server.start()
   return server

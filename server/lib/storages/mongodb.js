@@ -89,11 +89,7 @@ module.exports = class MongoDB extends Storage {
     super(Object.assign({name: 'mongo'}, opts))
 
     // Provider configuration options. @see constructor
-    const {error} = Joi.validate(opts, optsSchema)
-    if (error) {
-      throw error
-    }
-
+    Joi.assert(opts, optsSchema)
     this.db = null
   }
 
@@ -109,7 +105,8 @@ module.exports = class MongoDB extends Storage {
   async _getCollection (modelClass) {
     if (!this.db) {
       this.opts.logger.debug('connecting to database...')
-      this.db = await MongoClient.connect(this.opts.url)
+      const client = await MongoClient.connect(this.opts.url)
+      this.db = client.db(this.opts.url.match(/\/([^/]+)$/)[1])
       this.opts.logger.info('connected to database')
     }
     // collection suffix is usefull for testing
