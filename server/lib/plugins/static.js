@@ -2,7 +2,6 @@ const {extname, resolve} = require('path')
 const {notFound} = require('boom')
 const {promisify} = require('util')
 const readFile = promisify(require('fs').readFile)
-const app = require('../../../client')
 const dist = resolve(__dirname, '..', '..', '..', 'client', 'dist')
 
 /**
@@ -14,7 +13,8 @@ exports.register = async server => {
   // load html file from dist for SSR re-hydratation
   try {
     const page = (await readFile(resolve(dist, 'index.html'))).toString()
-    // all route will endup in client/dist
+    const app = require('../../../client')
+    // all route will endup in client
     server.route({
       method: 'GET',
       path: '/{path*}',
@@ -35,7 +35,8 @@ exports.register = async server => {
       }
     })
   } catch (error) {
-    server.logger().warn({error}, `Couldn't find dist client: server side rendering disabled`)
+    server.logger().error({error}, `Couldn't find dist client, stopping server`)
+    throw error
   }
 }
 
