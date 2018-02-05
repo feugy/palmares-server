@@ -13,13 +13,16 @@ const WDSFProvider = require('../lib/providers/wdsf')
 require('dotenv').config()
 const isDebug = false
 
-const fixtures = resolve('server', 'test', 'fixtures')
+const fixtures = resolve(__dirname, 'fixtures')
 
 /**
  * Builds a test logger
  * @returns {Object} Bunyan compatible logger
  */
 exports.getLogger = () => pino({prettyPrint: true, level: isDebug ? 'trace' : 'silent'})
+
+// mongo storage singleton, one per test run
+let storage
 
 /**
  * Creates a Storage for MongoDB, base on MONGO_URL env variable
@@ -32,11 +35,14 @@ exports.getMongoStorage = () => {
   if (!('MONGO_URL' in process.env)) {
     throw new Error('Please set MONGO_URL as environment variable')
   }
-  return new MongoStorage({
-    url: process.env.MONGO_URL,
-    logger: exports.getLogger(),
-    suffix: `_${Math.floor(Math.random() * 100000)}`
-  })
+  if (!storage) {
+    storage = new MongoStorage({
+      url: process.env.MONGO_URL,
+      logger: exports.getLogger(),
+      suffix: `_${Math.floor(Math.random() * 100000)}`
+    })
+  }
+  return storage
 }
 
 /**

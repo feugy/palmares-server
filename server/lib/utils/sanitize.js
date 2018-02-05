@@ -13,7 +13,7 @@ exports.removeAccents = (value, removeDots = false) => {
     return (code >= 224 && code <= 230) || [257, 259, 261].includes(code)
       ? 'a'
       // 231: ç, 263: ć, 265: ĉ, 267: ċ, 269: č,
-      : [231, 263, 265, 267].includes(code)
+      : [231, 263, 265, 267, 269].includes(code)
         ? 'c'
         // 240: ð, 271: ď, 273: đ
         : [240, 271, 273].includes(code)
@@ -28,7 +28,7 @@ exports.removeAccents = (value, removeDots = false) => {
               : [293, 295].includes(code)
                 ? 'h'
                 // 236~239: ìíîï, 297: ĩ, 299: ī, 301: ĭ, 303: į, 305: ı
-                : (code >= 236 && code <= 239) || [297, 301, 303, 305].includes(code)
+                : (code >= 236 && code <= 239) || [297, 299, 301, 303, 305].includes(code)
                   ? 'i'
                   // 307: ĳ, 309: ĵ
                   : [307, 309].includes(code)
@@ -46,7 +46,7 @@ exports.removeAccents = (value, removeDots = false) => {
                           : (code >= 242 && code <= 246) || [333, 335, 337, 339].includes(code)
                             ? 'o'
                             // 341: ŕ, 343: ŗ, 345: ř
-                            : [331, 343, 345].includes(code)
+                            : [341, 343, 345].includes(code)
                               ? 'r'
                               // 347: ś, 349: ŝ, 351: ş, 353: š
                               : [347, 349, 351, 353].includes(code)
@@ -61,7 +61,7 @@ exports.removeAccents = (value, removeDots = false) => {
                                     : [253, 375].includes(code)
                                       ? 'y'
                                       // 378: ź, 380: ż, 382: ž
-                                      : [378, 381, 383].includes(code)
+                                      : [378, 380, 382].includes(code)
                                         ? 'z'
                                         // 46: .
                                         : removeDots && code === 46

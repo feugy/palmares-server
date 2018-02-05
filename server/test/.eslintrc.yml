@@ -1,9 +1,2 @@
-extends:
-  - plugin:ava/recommended
-
-plugins:
-  - ava
-
 rules:
-  ava/no-cb-test: error
-  ava/prefer-power-assert: error
+  no-new: off

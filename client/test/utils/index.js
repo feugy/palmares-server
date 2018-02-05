@@ -1,15 +1,18 @@
-const test = require('ava').default
+const {describe, it} = exports.lab = require('lab').script()
+const assert = require('power-assert')
 const {performance} = require('perf_hooks')
 const {timeout} = require('../../lib/utils')
 
-test('should timeout be asynchronous', async t => {
-  const start = performance.now()
-  await timeout()
-  t.true(performance.now() - start > 0)
-})
+describe('utilities', () => {
+  it('should timeout be asynchronous', async () => {
+    const start = performance.now()
+    await timeout()
+    assert(performance.now() - start > 0)
+  })
 
-test('should timeout run after N milliseconds', async t => {
-  const start = performance.now()
-  await timeout(10)
-  t.true(performance.now() - start >= 9)
+  it('should timeout run after N milliseconds', async () => {
+    const start = performance.now()
+    await timeout(10)
+    assert(performance.now() - start >= 9)
+  })
 })

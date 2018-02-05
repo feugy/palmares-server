@@ -8,7 +8,7 @@ exports.register = async (server, options) => {
   // configure authentication strategy
   server.auth.strategy('jwt', 'jwt', {
     key: options.key,
-    validate: decoded => ({valid: true}),
+    validate: decoded => ({isValid: true}),
     verifyOptions: {
       algorithms: ['HS256']
     }

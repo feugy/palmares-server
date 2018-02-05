@@ -8,14 +8,17 @@
   "scripts": {
     "build": "bankai build client",
     "dev": "nodemon bin/start.js | pino",
+    "deps:available": "next-update --latest",
+    "deps:update": "next-update -k true --tldr",
     "inspect": "bankai inspect client",
     "postinstall": "npm run build",
     "lint": "eslint server --fix --ignore-path .gitignore",
     "nsp": "nsp check",
-    "start": "cross-env NODE_ENV=production node bin/start | pino",
-    "test": "eslint server --ignore-path .gitignore && nyc ava --verbose",
-    "test:coveralls": "nyc report --reporter=text-lcov | coveralls -v",
-    "test:watch": "ava --verbose --watch"
+    "start": "export NODE_ENV=production && node bin/start | pino",
+    "test": "npm run test:client && npm run test:server",
+    "test:client": "cd client && lab",
+    "test:server": "cd server && lab",
+    "test:coveralls": "(cat client/coverage/lcov.info && cat server/coverage/lcov.info) | coveralls -v"
   },
   "repository": {
     "type": "git",
@@ -31,82 +34,56 @@
     "axios": "~0.17.1",
     "babel-polyfill": "~6.26.0",
     "babel-preset-stage-3": "~6.24.1",
-    "bankai": "~9.0.2",
+    "bankai": "~9.4.1",
     "boom": "~7.1.1",
     "cheerio": "~1.0.0-rc.2",
-    "choo": "~6.6.0",
+    "choo": "~6.6.1",
     "choo-devtools": "~2.2.0",
-    "cross-env": "~5.1.1",
     "csv-parse": "~2.0.0",
     "dotenv": "~4.0.0",
-    "hapi": "~17.1.1",
-    "hapi-auth-jwt2": "salzhrani/hapi-auth-jwt2#v-17",
+    "hapi": "~17.2.0",
+    "hapi-auth-jwt2": "github:salzhrani/hapi-auth-jwt2#v-17",
     "hapi-pino": "~3.2.0",
     "inert": "~5.0.1",
     "joi": "~13.0.2",
-    "js-yaml": "3.10.0",
+    "js-yaml": "~3.10.0",
     "lodash": "~4.17.4",
     "md5": "~2.2.1",
     "moment": "~2.19.3",
     "moment-timezone": "~0.5.14",
-    "mongodb": "~3.0.0-rc0",
+    "mongodb": "~3.0.2",
     "nodemon": "~1.12.5",
-    "pino": "~4.10.2",
+    "pino": "~4.10.3",
     "request": "~2.83.0",
     "request-promise-native": "~1.0.5",
     "sprintf-js": "~1.1.1",
     "underscore.string.fp": "~1.0.4"
   },
   "devDependencies": {
-    "ava": "~0.24.0",
-    "axios-mock-adapter": "1.10.0",
+    "axios-mock-adapter": "~1.10.0",
     "browser-env": "~3.2.4",
     "coveralls": "~3.0.0",
     "eslint": "~4.12.1",
     "eslint-config-standard": "~10.2.1",
-    "eslint-plugin-ava": "~4.4.0",
     "eslint-plugin-import": "~2.8.0",
     "eslint-plugin-lodash-fp": "~2.1.3",
     "eslint-plugin-node": "~5.2.1",
     "eslint-plugin-promise": "~3.6.0",
     "eslint-plugin-standard": "~3.0.1",
+    "global-npm": "~0.3.0",
     "iconv-lite": "~0.4.19",
-    "npm-programmatic": "~0.0.9",
-    "npm-run": "~4.1.2",
-    "npm-run-all": "~4.1.2",
+    "lab": "~15.2.1",
+    "lab-espower-transformer": "~2.0.0",
+    "next-update": "~3.6.0",
     "nsp": "~3.1.0",
-    "nyc": "~11.3.0",
+    "power-assert": "~1.4.4",
     "rimraf": "~2.6.2",
-    "sinon": "~4.1.2"
-  },
-  "ava": {
-    "files": [
-      "client/test/**/*.js",
-      "server/test/**/*.js",
-      "!server/test/test-utils.js"
-    ],
-    "source": [
-      "**/*.js",
-      "!client/dist/**/*"
-    ]
+    "sinon": "~4.1.6"
   },
   "babel": {
     "presets": [
       "stage-3"
     ]
-  },
-  "eslintConfig": {
-    "extends": [
-      "standard"
-    ],
-    "plugins": [
-      "promise",
-      "lodash-fp"
-    ],
-    "env": {
-      "es6": true,
-      "node": true
-    }
   },
   "nodemonConfig": {
     "watch": [
@@ -115,19 +92,5 @@
     "ignore": [
       "server/test/**/*"
     ]
-  },
-  "nyc": {
-    "include": [
-      "client/lib/**/*",
-      "server/lib/**/*"
-    ],
-    "all": true,
-    "check-coverage": true,
-    "lines": 95,
-    "reporter": [
-      "text",
-      "html"
-    ],
-    "temp-directory": "coverage"
   }
 }

@@ -1,64 +1,91 @@
-const test = require('ava').default
+
+const {describe, it} = exports.lab = require('lab').script()
+const assert = require('power-assert')
 const {promisify} = require('util')
 const {resolve} = require('path')
 const rimraf = promisify(require('rimraf'))
-const exec = promisify(require('npm-run').exec)
 const {merge} = require('lodash/fp')
 const request = require('request-promise-native')
+const access = promisify(require('fs').access)
+const npm = require('global-npm')
 const {readConf} = require('../lib/utils')
 const startServer = require('../lib/server')
 // read env variables
 require('dotenv').config()
 
-const testOpts = async (t, opts, expected) => {
-  const err = await t.throws(startServer(opts), Error)
-  t.true(err.message.includes(expected))
-}
-testOpts.title = (providedTitle, input, expected) => `should not build with option: ${JSON.stringify(input)}`
-
-test(testOpts, {}, '"port" is required')
-test(testOpts, {port: 10.5}, '"port" must be an integer')
-test(testOpts, {port: 0, storage: {name: true}}, '"name" must be a string')
-test(testOpts, {port: 0, storage: {name: 'bla'}}, '"name" must be one of')
-test(testOpts, {port: 0, storage: {name: 'Mongo'}, providers: 10}, '"providers" must be an array')
-test(testOpts, {port: 0, storage: {name: 'Mongo'}, providers: ['bla']}, '"0" must be an object')
-test(testOpts, {port: 0, storage: {name: 'Mongo'}, providers: [{name: 'bla'}]}, '"name" must be one of')
-test(testOpts, {port: 0, storage: {name: 'Mongo'}, providers: []}, '"auth" is required')
-test(testOpts, {port: 0, storage: {name: 'Mongo'}, providers: [], auth: {}}, '"key" is required')
-test(testOpts, {port: 0, storage: {name: 'Mongo'}, providers: [], auth: {key: 10}}, '"key" must be a string')
-
 const confPath = resolve(__dirname, '..', '..', 'conf', 'test.yml')
 
-test('should be started with all options', async t => {
-  const port = 9873
-  const server = await startServer(merge(await readConf(confPath))({port, isProd: true}))
+describe('server', () => {
+  [{
+    input: {}, expected: '"port" is required'
+  }, {
+    input: {port: 10.5}, expected: '"port" must be an integer'
+  }, {
+    input: {port: 0, storage: {name: true}}, expected: '"name" must be a string'
+  }, {
+    input: {port: 0, storage: {name: 'bla'}}, expected: '"name" must be one of'
+  }, {
+    input: {port: 0, storage: {name: 'Mongo'}, providers: 10}, expected: '"providers" must be an array'
+  }, {
+    input: {port: 0, storage: {name: 'Mongo'}, providers: ['bla']}, expected: '"0" must be an object'
+  }, {
+    input: {port: 0, storage: {name: 'Mongo'}, providers: [{name: 'bla'}]}, expected: '"name" must be one of'
+  }, {
+    input: {port: 0, storage: {name: 'Mongo'}, providers: []}, expected: '"auth" is required'
+  }, {
+    input: {port: 0, storage: {name: 'Mongo'}, providers: [], auth: {}}, expected: '"key" is required'
+  }, {
+    input: {port: 0, storage: {name: 'Mongo'}, providers: [], auth: {key: 10}}, expected: '"key" must be a string'
+  }].forEach(({input, expected}) => {
+    it(`should not build with option: ${JSON.stringify(input)}`, async () => {
+      try {
+        await startServer(input)
+      } catch (err) {
+        assert(err instanceof Error)
+        assert(err.message.includes(expected))
+        return
+      }
+      throw new Error('should have failed')
+    })
+  })
 
-  await request({url: `http://localhost:${port}/api/competition`, json: true})
-  await server.stop()
-  t.pass()
-})
+  const clientDist = resolve(__dirname, '..', '..', 'client', 'dist')
 
-test('should only render server side with dist', async t => {
-  const port = 9870
-  // remove dist client
-  try {
-    await rimraf(resolve(__dirname, '..', '..', 'client', 'dist'))
-  } catch (err) {
-    // ignore error if dist doesn't exist
-  }
+  it('should be started with all options', {timeout: 60e3}, async () => {
+    // builds client if needed
+    try {
+      await access(resolve(clientDist, 'index.html'))
+    } catch (err) {
+      await promisify(npm.load)({})
+      await promisify(npm.commands.run)(['build'])
+    }
 
-  // start server, and request root page, which shouldn't exist
-  let server = await startServer(merge(await readConf(confPath))({port, isProd: true}))
-  let result = await request({url: `http://localhost:${port}/`, simple: false, json: true})
-  await server.stop()
-  t.is(result.statusCode, 404)
+    const port = 9873
+    const server = await startServer(merge(await readConf(confPath))({port, isProd: true}))
 
-  // builds client. For unknown reason, Ava mess with npm, and we can't exec `npm run build` from tests
-  await exec('bankai build client')
+    await request({url: `http://localhost:${port}/api/competition`, json: true})
+    let result = await request({url: `http://localhost:${port}/`})
+    await server.stop()
+    assert(result.includes('body'))
+  })
 
-  // restart server (to reload dist client), and request root page, which should exist
-  server = await startServer(merge(await readConf(confPath))({port, isProd: true}))
-  result = await request({url: `http://localhost:${port}/`})
-  await server.stop()
-  t.true(result.includes('body'))
+  it('should only render server side with dist', async t => {
+    const port = 9870
+    // remove dist client
+    try {
+      await rimraf(clientDist)
+    } catch (err) {
+      // ignore error if dist doesn't exist
+    }
+
+    try {
+      await startServer(merge(await readConf(confPath))({port, isProd: true}))
+    } catch (err) {
+      assert(err instanceof Error)
+      assert(err.message.includes('no such file or directory'))
+      assert(err.message.includes('index.html'))
+      return
+    }
+    throw new Error('should have failed')
+  })
 })

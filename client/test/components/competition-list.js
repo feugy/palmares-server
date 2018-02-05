@@ -1,23 +1,26 @@
-const test = require('ava').default
+const {describe, it} = exports.lab = require('lab').script()
+const assert = require('power-assert')
 require('browser-env')()
 const Competition = require('../../../server/lib/models/competition')
 const component = require('../../lib/components/competition-list')
 
-test('should render empty list', t => {
-  const html = component()
+describe('competition-list component', () => {
+  it('should render empty list', () => {
+    const html = component()
 
-  t.is(html.tagName, 'SPAN')
-  t.true(html.textContent.includes('Aucune compétition'))
-})
+    assert(html.tagName === 'SPAN')
+    assert(html.textContent.includes('Aucune compétition'))
+  })
 
-test('should render competition list', t => {
-  const html = component([
-    new Competition({id: '1', place: 'Paris', date: '2017-10-27'}),
-    new Competition({id: '2', place: 'Lyon', date: '2017-10-05'})
-  ])
+  it('should render competition list', () => {
+    const html = component([
+      new Competition({id: '1', place: 'Paris', date: '2017-10-27'}),
+      new Competition({id: '2', place: 'Lyon', date: '2017-10-05'})
+    ])
 
-  t.is(html.tagName, 'UL')
-  t.is(html.querySelectorAll('li').length, 2)
-  t.true(html.textContent.includes('Paris'))
-  t.true(html.textContent.includes('Lyon'))
+    assert(html.tagName === 'UL')
+    assert(html.querySelectorAll('li').length === 2)
+    assert(html.textContent.includes('Paris'))
+    assert(html.textContent.includes('Lyon'))
+  })
 })
