@@ -1,36 +1,66 @@
-const test = require('ava').default
+const {describe, it} = exports.lab = require('lab').script()
+const assert = require('power-assert')
 const Provider = require('../../lib/providers/provider')
 const {getLogger} = require('../test-utils')
 
-const testOpts = async (t, opts, expected) => {
-  const err = t.throws(() => new Provider(opts), Error)
-  t.true(err.message.includes(expected))
-}
-testOpts.title = (providedTitle, opts) => `should reject options: ${JSON.stringify(opts)}`
+describe('generic provider', () => {
+  const logger = {}
+  const fixtures = [{
+    input: undefined, expected: '"opts" is required'
+  }, {
+    input: {}, expected: '"name" is required'
+  }, {
+    input: {name: 10}, expected: '"name" must be a string'
+  }, {
+    input: {name: 'test'}, expected: '"logger" is required'
+  }, {
+    input: {name: 'test', logger: true}, expected: '"logger" must be an object'
+  }, {
+    input: {name: 'test', logger}, expected: '"url" is required'
+  }, {
+    input: {name: 'test', logger, url: true}, expected: '"url" must be a string'
+  }, {
+    input: {name: 'test', logger, url: 'test'}, expected: '"list" is required'
+  }, {
+    input: {name: 'test', logger, url: 'test', list: []}, expected: '"list" must be a string'
+  }, {
+    input: {name: 'test', logger, url: 'test', list: 'test'}, expected: '"dateFormat" is required'
+  }, {
+    input: {name: 'test', logger, url: 'test', list: 'test', dateFormat: {}}, expected: '"dateFormat" must be a string'
+  }]
 
-const logger = {}
-test(testOpts, undefined, '"opts" is required')
-test(testOpts, {}, '"name" is required')
-test(testOpts, {name: 10}, '"name" must be a string')
-test(testOpts, {name: 'test'}, '"logger" is required')
-test(testOpts, {name: 'test', logger: true}, '"logger" must be an object')
-test(testOpts, {name: 'test', logger}, '"url" is required')
-test(testOpts, {name: 'test', logger, url: true}, '"url" must be a string')
-test(testOpts, {name: 'test', logger, url: 'test'}, '"list" is required')
-test(testOpts, {name: 'test', logger, url: 'test', list: []}, '"list" must be a string')
-test(testOpts, {name: 'test', logger, url: 'test', list: 'test'}, '"dateFormat" is required')
-test(testOpts, {name: 'test', logger, url: 'test', list: 'test', dateFormat: {}}, '"dateFormat" must be a string')
+  fixtures.forEach(({input, expected}) => {
+    it(`should reject options: ${JSON.stringify(input)}`, () => {
+      try {
+        new Provider(input)
+      } catch (err) {
+        assert(err instanceof Error)
+        assert(err.message.includes(expected))
+        return
+      }
+      throw new Error('should have failed')
+    })
+  })
 
-const provider = new Provider({name: 'test', logger: getLogger(), url: 'test', list: 'test', dateFormat: 'test'})
+  const provider = new Provider({name: 'test', logger: getLogger(), url: 'test', list: 'test', dateFormat: 'test'})
 
-const testMethod = async (t, feature) => {
-  const err = await t.throws(provider[feature](), Error)
-  t.true(err.message.includes(`test does not implement "${feature}"`))
-}
-testMethod.title = (providedTitle, feature) => `should report unimplemented ${feature}()`
-
-test(testMethod, 'listResults')
-test(testMethod, 'getDetails')
-test(testMethod, 'searchGroups')
-test(testMethod, 'searchCouples')
-test(testMethod, 'getGroupCouples')
+  const features = [
+    'listResults',
+    'getDetails',
+    'searchGroups',
+    'searchCouples',
+    'getGroupCouples'
+  ]
+  features.forEach(feature => {
+    it(`should report unimplemented ${feature}()`, async () => {
+      try {
+        await provider[feature]()
+      } catch (err) {
+        assert(err instanceof Error)
+        assert(err.message.includes(`test does not implement "${feature}"`))
+        return
+      }
+      throw new Error('should have failed')
+    })
+  })
+})

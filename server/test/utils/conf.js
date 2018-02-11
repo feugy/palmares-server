@@ -1,22 +1,41 @@
-const test = require('ava').default
+const {describe, it} = exports.lab = require('lab').script()
+const assert = require('power-assert')
+const {resolve} = require('path')
 const {readConf} = require('../../lib/utils')
 // read env variables
 require('dotenv').config()
 
-test('should fail to read unknown file ', async t => {
-  const err = await t.throws(readConf('unknown.yml'), Error)
-  t.true(err.message.includes('failed to load configuration from file unknown.yml'))
-})
+describe('conf utilities', () => {
+  it('should fail to read unknown file ', async () => {
+    try {
+      await readConf('unknown.yml')
+    } catch (err) {
+      assert(err instanceof Error)
+      assert(err.message.includes('failed to load configuration from file unknown.yml'))
+      return
+    }
+    throw new Error('should have failed')
+  })
 
-test('should fail to read unparseable file ', async t => {
-  const err = await t.throws(readConf('README.md'), Error)
-  t.true(err.message.includes('failed to parse configuration from file README.md'))
-})
+  const root = resolve(__dirname, '..', '..', '..')
 
-test('should manage to read parseable file ', async t => {
-  const conf = await readConf('package.json')
-  t.is(conf.name, 'palmares-server')
-  t.false(conf.port === undefined)
-  t.false(conf.storage.url === undefined)
-  t.false(conf.auth.key === undefined)
+  it('should fail to read unparseable file ', async () => {
+    try {
+      await readConf(resolve(root, 'README.md'))
+    } catch (err) {
+      assert(err instanceof Error)
+      assert(err.message.includes('failed to parse configuration from file'))
+      assert(err.message.includes('README.md'))
+      return
+    }
+    throw new Error('should have failed')
+  })
+
+  it('should manage to read parseable file ', async () => {
+    const conf = await readConf(resolve(root, 'package.json'))
+    assert(conf.name, 'palmares-server')
+    assert(conf.port)
+    assert(conf.storage.url)
+    assert(conf.auth.key)
+  })
 })

@@ -1,23 +1,26 @@
-const test = require('ava').default
+const {describe, it} = exports.lab = require('lab').script()
+const assert = require('power-assert')
 const {i18n} = require('../../lib/labels')
 
-test('should return existing key', t => {
-  const str = i18n('buttons.backToMain')
-  t.is(str, 'Retour à l\'accueil')
-})
+describe('labels utilities', () => {
+  it('should return existing key', () => {
+    const str = i18n('buttons.backToMain')
+    assert(str === 'Retour à l\'accueil')
+  })
 
-test('should return default message for unknown key', t => {
-  const path = 'buttons.unknown'
-  t.is(i18n(path), `ERR: path '${path}' not found`)
-})
+  it('should return default message for unknown key', () => {
+    const path = 'buttons.unknown'
+    assert(i18n(path) === `ERR: path '${path}' not found`)
+  })
 
-test('should perform variable substitution', t => {
-  const place = 'this is a test'
-  const str = i18n('pageTitles.competitionDetails', {place})
-  t.is(str, `Palmarès - ${place}`)
-})
+  it('should perform variable substitution', () => {
+    const place = 'this is a test'
+    const str = i18n('pageTitles.competitionDetails', {place})
+    assert(str === `Palmarès - ${place}`)
+  })
 
-test('should not fail on missing variable', t => {
-  const str = i18n('pageTitles.competitionDetails', {})
-  t.is(str, `ERR: 'Palmarès - \${place}', place is not defined`)
+  it('should not fail on missing variable', () => {
+    const str = i18n('pageTitles.competitionDetails', {})
+    assert(str === `ERR: 'Palmarès - \${place}', place is not defined`)
+  })
 })

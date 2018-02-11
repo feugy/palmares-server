@@ -1,29 +1,53 @@
-const test = require('ava').default
+const {describe, it} = exports.lab = require('lab').script()
+const assert = require('power-assert')
 const Storage = require('../../lib/storages/storage')
 const {getLogger} = require('../test-utils')
 
-const testOpts = async (t, opts, expected) => {
-  const err = t.throws(() => new Storage(opts), Error)
-  t.true(err.message.includes(expected))
-}
-testOpts.title = (providedTitle, opts) => `should reject options: ${JSON.stringify(opts)}`
+describe('generic storage', () => {
+  const fixtures = [{
+    input: undefined, expected: '"opts" is required'
+  }, {
+    input: {}, expected: '"name" is required'
+  }, {
+    input: {name: 10}, expected: '"name" must be a string'
+  }, {
+    input: {name: 'test'}, expected: '"logger" is required'
+  }, {
+    input: {name: 'test', logger: true}, expected: '"logger" must be an object'
+  }]
 
-test(testOpts, undefined, '"opts" is required')
-test(testOpts, {}, '"name" is required')
-test(testOpts, {name: 10}, '"name" must be a string')
-test(testOpts, {name: 'test'}, '"logger" is required')
-test(testOpts, {name: 'test', logger: true}, '"logger" must be an object')
+  fixtures.forEach(({input, expected}) => {
+    it(`should reject options: ${JSON.stringify(input)}`, () => {
+      try {
+        new Storage(input)
+      } catch (err) {
+        assert(err instanceof Error)
+        assert(err.message.includes(expected))
+        return
+      }
+      throw new Error('should have failed')
+    })
+  })
 
-const storage = new Storage({name: 'test', logger: getLogger()})
+  const storage = new Storage({name: 'test', logger: getLogger()})
 
-const testMethod = async (t, feature) => {
-  const err = await t.throws(storage[feature](), Error)
-  t.true(err.message.includes(`test does not implement "${feature}"`))
-}
-testMethod.title = (providedTitle, feature) => `should report unimplemented ${feature}()`
-
-test(testMethod, 'findById')
-test(testMethod, 'find')
-test(testMethod, 'save')
-test(testMethod, 'remove')
-test(testMethod, 'removeAll')
+  const features = [
+    'findById',
+    'find',
+    'save',
+    'remove',
+    'removeAll'
+  ]
+  features.forEach(feature => {
+    it(`should report unimplemented ${feature}()`, async () => {
+      try {
+        await storage[feature]()
+      } catch (err) {
+        assert(err instanceof Error)
+        assert(err.message.includes(`test does not implement "${feature}"`))
+        return
+      }
+      throw new Error('should have failed')
+    })
+  })
+})

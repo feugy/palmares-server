@@ -1,24 +1,31 @@
-const test = require('ava').default
+const {describe, it, beforeEach} = exports.lab = require('lab').script()
+const assert = require('power-assert')
 require('browser-env')()
 const choo = require('choo')
 const view = require('../../lib/views/404')
 
-test.beforeEach(t => {
-  const app = choo()
-  t.context.state = app.state
-  t.context.emitter = app.emitter
-  t.context.emit = app.emitter.emit.bind(app.emitter)
-})
+describe('404 view', () => {
+  let state
+  let emitter
+  let emit
 
-test.cb('should display error message and set title', t => {
-  const {state, emit, emitter} = t.context
-
-  emitter.on(state.events.DOMTITLECHANGE, title => {
-    t.true(title.includes('introuvable'))
-    setTimeout(t.end, 0)
+  beforeEach(() => {
+    const app = choo()
+    state = app.state
+    emitter = app.emitter
+    emit = app.emitter.emit.bind(app.emitter)
   })
 
-  const html = view(state, emit)
+  it('should display error message and set title', () =>
+    new Promise(resolve => {
+      emitter.on(state.events.DOMTITLECHANGE, title => {
+        assert(title.includes('introuvable'))
+        resolve()
+      })
 
-  t.is(html.querySelector('h1').textContent, 'Page non trouvée !')
+      const html = view(state, emit)
+
+      assert(html.querySelector('h1').textContent === 'Page non trouvée !')
+    })
+  )
 })

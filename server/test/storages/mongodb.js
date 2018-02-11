@@ -1,4 +1,5 @@
-const test = require('ava').default
+const {describe, it, beforeEach, afterEach} = exports.lab = require('lab').script()
+const assert = require('power-assert')
 const moment = require('moment')
 const {MongoClient} = require('mongodb')
 const {randomBytes} = require('crypto')
@@ -39,230 +40,255 @@ const runOperation = async (storage, collection, operation, ...args) => {
   }
 }
 
-test.beforeEach(t => {
-  t.context.storage = getMongoStorage()
-})
-
-// deletes entire collection after all tests
-test.afterEach.always(async t => {
-  try {
-    await runOperation(t.context.storage, 'competition', 'drop')
-  } catch (err) {
-    // ignore errors when deleting
-  }
-})
-
-// ------- constructor
-test('should fail when build without required options', t => {
-  const err = t.throws(() => new MongoStorage({logger: getLogger()}), Error)
-  t.true(err.message.includes('"url" is required'))
-})
-
-// ------- find
-test('should return empty results on empty model collection', async t => {
-  const {storage} = t.context
-  try {
-    await runOperation(storage, 'competition', 'drop')
-  } catch (err) {
-    // ignore
-  }
-  const fetched = await storage.find(Competition)
-  t.is(fetched.length, 0)
-})
-
-test('should return all models', async t => {
-  const {storage} = t.context
-  const {insertedIds} = await runOperation(storage, 'competition', 'insertMany', [{
-    _id: randomId(),
-    place: 'Marseille',
-    date: moment('2013-03-23').toDate(),
-    url: 'nevermind'
-  }, {
-    _id: randomId(),
-    place: 'Lille',
-    date: moment('2013-03-16').toDate(),
-    url: 'nevermind'
-  }])
-
-  const fetched = await storage.find(Competition)
-  t.true(fetched.length >= 2)
-
-  let competition = fetched.find(c => c.id === insertedIds[0])
-  t.false(competition === undefined)
-  t.is(competition.place, 'Marseille')
-
-  competition = fetched.find(c => c.id === insertedIds[1])
-  t.false(competition === undefined)
-  t.is(competition.place, 'Lille')
-})
-
-test('should return all by query', async t => {
-  const {storage} = t.context
-  const {insertedIds} = await runOperation(storage, 'competition', 'insertMany', [{
-    _id: randomId(),
-    place: 'Paris',
-    date: moment('2013-03-23').toDate(),
-    url: 'nevermind'
-  }, {
-    _id: randomId(),
-    place: 'Lyon',
-    date: moment('2013-03-16').toDate(),
-    url: 'nevermind'
-  }, {
-    _id: randomId(),
-    place: 'Paris',
-    date: moment('2013-02-05').toDate(),
-    url: 'nevermind'
-  }])
-
-  const fetched = await storage.find(Competition, {place: 'Paris'})
-  t.true(fetched.length >= 2)
-
-  let competition = fetched.find(c => c.id === insertedIds[0])
-  t.false(competition === undefined)
-
-  competition = fetched.find(c => c.id === insertedIds[1])
-  t.is(competition, undefined)
-
-  competition = fetched.find(c => c.id === insertedIds[2])
-  t.false(competition === undefined)
-})
-
-test('should handle disconnection error when finding model', async t => {
-  const err = await t.throws(disconnectedStorage.find(Competition), Error)
-  t.true(err.message.includes('failed to connect to server'))
-})
-
-// ------- removeAll
-test('should drop empty model collection', async t => {
-  const result = await t.context.storage.removeAll(Competition)
-  t.is(result, undefined)
-})
-
-test('should handle disconnection error when removing all models', async t => {
-  const err = await t.throws(disconnectedStorage.removeAll(Competition), Error)
-  t.true(err.message.includes('failed to connect to server'))
-})
-
-// ------- save
-test('should reject unsupported model during save', async t => {
-  const err = await t.throws(t.context.storage.save(new Test()), Error)
-  t.true(err.message.includes('Unsupported model class test'))
-})
-
-test('should save a competition', async t => {
-  const {storage} = t.context
-  const competition = new Competition({
-    id: randomId(),
-    place: 'Marseille',
-    date: moment('2013-03-23'),
-    url: 'nevermind'
+describe('mongodb storage', () => {
+  let storage
+  beforeEach(() => {
+    storage = getMongoStorage()
   })
 
-  const saved = await storage.save(competition)
-  t.is(competition, saved)
-
-  const results = await runOperation(storage, 'competition', 'findOne', {_id: competition.id})
-  t.false(results === null)
-})
-
-test('should update a competition', async t => {
-  const {storage} = t.context
-  const competition = new Competition({
-    id: randomId(),
-    place: 'Marseille',
-    date: moment('2013-03-23'),
-    url: 'nevermind',
-    contests: [{
-      title: 'Juvéniles II E Latines',
-      results: {
-        'Danny Huck - Louise Jamm': 1,
-        'Leon Amiel - Lea Blanchon': 2,
-        'Theo Noguera - Eva Gulemirian': 3,
-        'Alan Sappa - Louane Piazza': 4
-      }
-    }]
+  // deletes entire collection after all tests
+  afterEach(async () => {
+    try {
+      await runOperation(storage, 'competition', 'drop')
+    } catch (err) {
+      // ignore errors when deleting
+    }
   })
 
-  // save
-  let saved = await storage.save(competition)
-  t.is(competition, saved)
-
-  let results = await runOperation(storage, 'competition', 'findOne', {_id: competition.id})
-  t.deepEqual(
-    Object.assign({id: results._id}, results),
-    Object.assign({_id: competition.id}, competition.toJSON())
-  )
-
-  // update
-  competition.contests.push({
-    title: 'En cours',
-    results: {}
+  // ------- constructor
+  it('should fail when build without required options', () => {
+    try {
+      new MongoStorage({logger: getLogger()})
+    } catch (err) {
+      assert(err instanceof Error)
+      assert(err.message.includes('"url" is required'))
+      return
+    }
+    throw new Error('should have failed')
   })
-  competition.url = 'nevermind 2'
-  saved = await storage.save(competition)
-  t.is(competition, saved)
 
-  results = await runOperation(storage, 'competition', 'findOne', {_id: competition.id})
-  t.deepEqual(
-    Object.assign({id: results._id}, results),
-    Object.assign({_id: competition.id}, competition.toJSON())
-  )
-})
-
-// ------- remove
-test('should reject unsupported model during remove', async t => {
-  const err = await t.throws(t.context.storage.remove(new Test()), Error)
-  t.true(err.message.includes('Unsupported model class test'))
-})
-
-test('should not fail when removing unsaved models', async t => {
-  await t.context.storage.remove(new Competition({
-    id: randomId(),
-    place: 'Marseille',
-    date: moment('2013-03-23'),
-    url: 'nevermind'
-  }))
-  t.pass()
-})
-
-test('should remove a competition', async t => {
-  const {storage} = t.context
-  const competition = new Competition({
-    id: randomId(),
-    place: 'Marseille',
-    date: moment('2013-03-23'),
-    url: 'nevermind'
+  // ------- find
+  it('should return empty results on empty model collection', async () => {
+    try {
+      await runOperation(storage, 'competition', 'drop')
+    } catch (err) {
+      // ignore
+    }
+    const fetched = await storage.find(Competition)
+    assert(fetched.length === 0)
   })
-  await storage.save(competition)
 
-  await storage.remove(competition)
+  it('should return all models', async () => {
+    const {insertedIds} = await runOperation(storage, 'competition', 'insertMany', [{
+      _id: randomId(),
+      place: 'Marseille',
+      date: moment('2013-03-23').toDate(),
+      url: 'nevermind'
+    }, {
+      _id: randomId(),
+      place: 'Lille',
+      date: moment('2013-03-16').toDate(),
+      url: 'nevermind'
+    }])
 
-  let fetched = await storage.findById(Competition, competition.id)
-  t.is(fetched, null)
+    const fetched = await storage.find(Competition)
+    assert(fetched.length >= 2)
 
-  const results = await runOperation(storage, 'competition', 'findOne', {_id: competition.id})
-  t.is(results, null)
-})
+    let competition = fetched.find(c => c.id === insertedIds[0])
+    assert(competition)
+    assert(competition.place === 'Marseille')
 
-// ------- findById
-test('should return null when fetching unknown ids', async t => {
-  const fetched = await t.context.storage.findById(Competition, `${Math.floor(Math.random() * 10000)}`)
-  t.is(fetched, null)
-})
-
-test('should retrieve a competition by id', async t => {
-  const {storage} = t.context
-  const competition = new Competition({
-    id: randomId(),
-    place: 'Marseille',
-    date: moment('2013-03-23'),
-    url: 'nevermind'
+    competition = fetched.find(c => c.id === insertedIds[1])
+    assert(competition)
+    assert(competition.place === 'Lille')
   })
-  await storage.save(competition)
 
-  let fetched = await storage.findById(Competition, competition.id)
-  t.false(competition === fetched)
-  t.true(fetched instanceof Competition)
-  t.deepEqual(competition.toJSON(), fetched.toJSON())
+  it('should return all by query', async () => {
+    const {insertedIds} = await runOperation(storage, 'competition', 'insertMany', [{
+      _id: randomId(),
+      place: 'Paris',
+      date: moment('2013-03-23').toDate(),
+      url: 'nevermind'
+    }, {
+      _id: randomId(),
+      place: 'Lyon',
+      date: moment('2013-03-16').toDate(),
+      url: 'nevermind'
+    }, {
+      _id: randomId(),
+      place: 'Paris',
+      date: moment('2013-02-05').toDate(),
+      url: 'nevermind'
+    }])
+
+    const fetched = await storage.find(Competition, {place: 'Paris'})
+    assert(fetched.length >= 2)
+
+    let competition = fetched.find(c => c.id === insertedIds[0])
+    assert(competition)
+
+    competition = fetched.find(c => c.id === insertedIds[1])
+    assert(competition === undefined)
+
+    competition = fetched.find(c => c.id === insertedIds[2])
+    assert(competition)
+  })
+
+  it('should handle disconnection error when finding model', async () => {
+    try {
+      await disconnectedStorage.find(Competition)
+    } catch (err) {
+      assert(err instanceof Error)
+      assert(err.message.includes('failed to connect to server'))
+      return
+    }
+    throw new Error('should have failed')
+  })
+
+  // ------- removeAll
+  it('should drop empty model collection', async () => {
+    const result = await storage.removeAll(Competition)
+    assert(result === undefined)
+  })
+
+  it('should handle disconnection error when removing all models', async () => {
+    try {
+      await disconnectedStorage.removeAll(Competition)
+    } catch (err) {
+      assert(err instanceof Error)
+      assert(err.message.includes('failed to connect to server'))
+      return
+    }
+    throw new Error('should have failed')
+  })
+
+  // ------- save
+  it('should reject unsupported model during save', async () => {
+    try {
+      await storage.save(new Test())
+    } catch (err) {
+      assert(err instanceof Error)
+      assert(err.message.includes('Unsupported model class test'))
+      return
+    }
+    throw new Error('should have failed')
+  })
+
+  it('should save a competition', async () => {
+    const competition = new Competition({
+      id: randomId(),
+      place: 'Marseille',
+      date: moment('2013-03-23'),
+      url: 'nevermind'
+    })
+
+    const saved = await storage.save(competition)
+    assert(competition === saved)
+
+    const results = await runOperation(storage, 'competition', 'findOne', {_id: competition.id})
+    assert(results)
+  })
+
+  it('should update a competition', async () => {
+    const competition = new Competition({
+      id: randomId(),
+      place: 'Marseille',
+      date: moment('2013-03-23'),
+      url: 'nevermind',
+      contests: [{
+        title: 'Juvéniles II E Latines',
+        results: {
+          'Danny Huck - Louise Jamm': 1,
+          'Leon Amiel - Lea Blanchon': 2,
+          'Theo Noguera - Eva Gulemirian': 3,
+          'Alan Sappa - Louane Piazza': 4
+        }
+      }]
+    })
+
+    // save
+    let saved = await storage.save(competition)
+    assert(competition === saved)
+
+    let results = await runOperation(storage, 'competition', 'findOne', {_id: competition.id})
+    assert.deepStrictEqual(
+      Object.assign({id: results._id}, results),
+      Object.assign({_id: competition.id}, competition.toJSON())
+    )
+
+    // update
+    competition.contests.push({
+      title: 'En cours',
+      results: {}
+    })
+    competition.url = 'nevermind 2'
+    saved = await storage.save(competition)
+    assert(competition === saved)
+
+    results = await runOperation(storage, 'competition', 'findOne', {_id: competition.id})
+    assert.deepStrictEqual(
+      Object.assign({id: results._id}, results),
+      Object.assign({_id: competition.id}, competition.toJSON())
+    )
+  })
+
+  // ------- remove
+  it('should reject unsupported model during remove', async () => {
+    try {
+      await storage.remove(new Test())
+    } catch (err) {
+      assert(err instanceof Error)
+      assert(err.message.includes('Unsupported model class test'))
+      return
+    }
+    throw new Error('should have failed')
+  })
+
+  it('should not fail when removing unsaved models', async () => {
+    await storage.remove(new Competition({
+      id: randomId(),
+      place: 'Marseille',
+      date: moment('2013-03-23'),
+      url: 'nevermind'
+    }))
+  })
+
+  it('should remove a competition', async () => {
+    const competition = new Competition({
+      id: randomId(),
+      place: 'Marseille',
+      date: moment('2013-03-23'),
+      url: 'nevermind'
+    })
+    await storage.save(competition)
+
+    await storage.remove(competition)
+
+    let fetched = await storage.findById(Competition, competition.id)
+    assert(fetched === null)
+
+    const results = await runOperation(storage, 'competition', 'findOne', {_id: competition.id})
+    assert(results === null)
+  })
+
+  // ------- findById
+  it('should return null when fetching unknown ids', async () => {
+    const fetched = await storage.findById(Competition, `${Math.floor(Math.random() * 10000)}`)
+    assert(fetched === null)
+  })
+
+  it('should retrieve a competition by id', async () => {
+    const competition = new Competition({
+      id: randomId(),
+      place: 'Marseille',
+      date: moment('2013-03-23'),
+      url: 'nevermind'
+    })
+    await storage.save(competition)
+
+    let fetched = await storage.findById(Competition, competition.id)
+    assert(competition !== fetched)
+    assert(fetched instanceof Competition)
+    assert.deepStrictEqual(competition.toJSON(), fetched.toJSON())
+  })
 })
