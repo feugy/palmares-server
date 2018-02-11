@@ -1,6 +1,11 @@
 require('babel-polyfill')
 const choo = require('choo')
+const css = require('sheetify')
 const views = require('./lib/views')
+
+css('normalize.css')
+css('material-design-lite/material.min.css')
+css('./styles/main.css')
 
 // init application
 const app = choo()

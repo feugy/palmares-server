@@ -111,7 +111,7 @@ describe('competition-list-item component', () => {
 
       emitter.once(state.events.RENDER, () => {
         assert(state.currentCompetition instanceof Error)
-        assert(state.currentCompetition.message.includes('no competition for id 3'))
+        assert(state.currentCompetition.message.includes('failed to fetch competition id 3'))
         resolve()
       })
 
@@ -122,24 +122,28 @@ describe('competition-list-item component', () => {
   it('should fetch competition by id with pre-loaded list', () =>
     new Promise(resolve => {
       store(state, emitter)
+      const id = '2'
       state.competitions = [
         new Competition({id: '1', place: 'Paris', date: '2017-10-27'}),
-        new Competition({id: '2', place: 'Lyon', date: '2017-10-15'})
+        new Competition({id, place: 'Lyon', date: '2017-10-15'})
       ]
 
       emitter.once(state.events.RENDER, () => {
-        assert.deepStrictEqual(state.currentCompetition, state.competitions[1])
+        assert.deepStrictEqual(state.currentCompetition.toJSON(), state.competitions[1].toJSON())
         resolve()
       })
 
-      emitter.emit(state.events.FETCH_CURRENT_COMPETITION, '2')
+      network.onGet(`/api/competition/${id}`).reply(200, state.competitions[1].toJSON())
+
+      emitter.emit(state.events.FETCH_CURRENT_COMPETITION, id)
     })
   )
 
   it('should fetch competition by id', () =>
     new Promise(resolve => {
+      const id = '1'
       const competitions = [
-        new Competition({id: '1', place: 'Paris', date: '2017-10-27'}),
+        new Competition({id, place: 'Paris', date: '2017-10-27'}),
         new Competition({id: '2', place: 'Lyon', date: '2017-10-15'})
       ]
 
@@ -157,8 +161,9 @@ describe('competition-list-item component', () => {
         size: 20,
         values: competitions.map(toJSON)
       })
+      network.onGet(`/api/competition/${id}`).reply(200, competitions[0].toJSON())
 
-      emitter.emit(state.events.FETCH_CURRENT_COMPETITION, '1')
+      emitter.emit(state.events.FETCH_CURRENT_COMPETITION, id)
     })
   )
 })

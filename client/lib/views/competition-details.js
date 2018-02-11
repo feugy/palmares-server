@@ -1,5 +1,6 @@
 const html = require('choo/html')
 const {i18n} = require('../labels')
+const contest = require('../components/contest')
 
 /**
  * Renders detailed page for a given competition.
@@ -19,7 +20,7 @@ module.exports = (state, emit) => {
   const {
     title: currentTitle,
     params: {id},
-    events: {DOMTITLECHANGE},
+    events: {DOMTITLECHANGE, FETCH_CURRENT_COMPETITION},
     currentCompetition
   } = state
 
@@ -35,7 +36,7 @@ module.exports = (state, emit) => {
 
   if (!currentCompetition || currentCompetition.id !== id) {
     // current competition has changed, let's fetch it and display loader
-    emit('competitions:fetchCurrent', id)
+    emit(FETCH_CURRENT_COMPETITION, id)
     return html`
       <body>
         <span class="loading">${i18n('labels.loading')}</span>
@@ -51,7 +52,8 @@ module.exports = (state, emit) => {
   return html`
     <body>
       <a href="/competitions">${i18n('buttons.backToList')}</a>
-      <h2>${i18n('titles.competitionDetails', state.currentCompetition)}</h2>
+      <h2>${i18n('titles.competitionDetails', currentCompetition)}</h2>
+      <ul>${currentCompetition.contests.map(contest)}</ul>
     </body>
   `
 }

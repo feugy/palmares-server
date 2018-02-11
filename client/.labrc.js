@@ -60,7 +60,10 @@ module.exports = {
     + 'screenTop,scrollX,scrollY,scrollTop,scrollLeft,screen,alert,blur,'
     + 'confirm,createPopup,focus,moveBy,moveTo,open,print,prompt,resizeBy,'
     + 'resizeTo,scroll,scrollBy,scrollTo,core,System,asap,Observable,'
-    + 'regeneratorRuntime,_babelPolyfill,__core-js_shared__',
+    + 'regeneratorRuntime,_babelPolyfill,__core-js_shared__,core,System,asap,'
+    + 'Observable,regeneratorRuntime,CloseEvent,BarProp,Screen,Performance,'
+    + 'locationbar,menubar,personalbar,scrollbars,statusbar,toolbar,'
+    + 'performance,WebSocket,devicePixelRatio',
   lint: true,
   'lint-warnings-threshold': 10,
   threshold: 95,

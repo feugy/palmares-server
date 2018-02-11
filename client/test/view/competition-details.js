@@ -13,6 +13,7 @@ describe('competition-details view', () => {
   beforeEach(() => {
     const app = choo()
     app.state.params = {id: null}
+    app.state.events.FETCH_CURRENT_COMPETITION = 'whatever'
     app.state.currentCompetition = null
     state = app.state
     emitter = app.emitter
@@ -45,7 +46,7 @@ describe('competition-details view', () => {
       state.params.id = '1'
       state.currentCompetition = new Competition({id: '2', place: 'Lyon', date: '2017-10-15'})
 
-      emitter.on('competitions:fetchCurrent', id => {
+      emitter.on(state.events.FETCH_CURRENT_COMPETITION, id => {
         assert(id === state.params.id)
         resolve()
       })

@@ -1,5 +1,5 @@
 const {resolve} = require('path')
-const {notFound} = require('boom')
+const {createServer} = require('http')
 
 /**
  * Register Bankai dev server with hot reloading.
@@ -7,31 +7,40 @@ const {notFound} = require('boom')
 exports.register = async server => {
   // differed require to keep it in dev dependencies
   const bankai = require('bankai/http')
-  const compiler = bankai(resolve(__dirname, '..', '..', '..', 'client')) //, {quiet: true})
-  compiler.state.port = server.info.port
-  // TODO when no document is compiled, server will fail
+  const compiler = bankai(resolve(__dirname, '..', '..', '..', 'client'), {
+    reload: true,
+    quiet: true,
+    watch: true
+  })
+  const port = server.info.port + 1
 
-  server.route({
-    method: 'OPTION',
-    path: '/{param*}',
-    handler: (req, h) =>
-      h.response()
-        .header('access-control-allow-origin', '*')
-        .header('access-control-allow-methods', '*')
-        .header('access-control-allow-headers', '*')
-        .header('access-control-allow-credentials', true)
-        .code(200)
+  // dev server compiles resources on the fly
+  const devServer = createServer((req, res) => {
+    compiler(req, res, () => {
+      res.statusCode = 404
+      res.end('not found')
+    })
   })
 
+  // Proxy to dev server
+  await server.register({
+    plugin: require('h2o2'),
+    options: {passThrough: true}
+  })
   server.route({
-    method: 'GET',
+    method: '*',
     path: '/{param*}',
-    handler: ({raw: {req, res}}, h) =>
-      new Promise((resolve, reject) => {
-        res.on('finish', () => resolve(null))
-        res.on('error', reject)
-        compiler(req, res, () => reject(notFound(`No route found for ${req.url}`)))
-      })
+    handler: {
+      proxy: {
+        uri: `{protocol}://localhost:${port}{path}`
+      }
+    }
+  })
+
+  // start dev server and listen
+  return new Promise((resolve, reject) => {
+    devServer.on('error', reject)
+    devServer.listen(port, resolve)
   })
 }
 

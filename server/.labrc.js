@@ -16,7 +16,10 @@ if (process.env.CI) {
 module.exports = {
   coverage: true,
   leaks: true,
-  globals: '__core-js_shared__,core,System,asap,Observable,regeneratorRuntime,_babelPolyfill',
+  globals: '__core-js_shared__,core,System,asap,Observable,regeneratorRuntime,'
+    + '_babelPolyfill,CloseEvent,BarProp,Screen,Performance,locationbar,menubar,'
+    + 'personalbar,scrollbars,statusbar,toolbar,performance,WebSocket,'
+    + 'devicePixelRatio',
   lint: true,
   'lint-warnings-threshold': 10,
   threshold: 95,

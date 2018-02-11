@@ -1,6 +1,4 @@
 const axios = require('axios')
-const {find} = require('lodash/fp')
-const {timeout} = require('../utils')
 const Competition = require('../../../server/lib/models/competition')
 
 const FETCH_COMPETITIONS = 'competitions:fetch'
@@ -53,13 +51,12 @@ module.exports = (state, emitter) => {
     if (state.competitions instanceof Error) {
       state.currentCompetition = new Error(`can't fetch competition list`)
     } else {
-      state.currentCompetition = find({id})(state.competitions)
-      if (!state.currentCompetition) {
-        state.currentCompetition = new Error(`no competition for id ${id}`)
+      try {
+        state.currentCompetition = new Competition((await axios.get(`/api/competition/${id}`)).data)
+      } catch (err) {
+        state.currentCompetition = new Error(`failed to fetch competition id ${id}: ${err.message}`)
       }
     }
-    // in case of list already loaded, defer rendering to avoid being synchronous
-    await timeout()
     emitter.emit(RENDER)
   }
 
